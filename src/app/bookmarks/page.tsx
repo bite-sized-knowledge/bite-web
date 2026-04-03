@@ -62,7 +62,16 @@ export default function BookmarksPage() {
         </h1>
       </header>
 
-      {articles.length === 0 && !isLoading ? (
+      {isLoading ? (
+        <>
+          {/* Profile skeleton */}
+          <div className="flex items-center gap-2 px-4 py-5 animate-pulse">
+            <div className="w-12 h-12 rounded-full bg-[var(--color-gray4)] shrink-0" />
+            <div className="h-5 w-24 rounded bg-[var(--color-gray4)]" />
+          </div>
+          <ArticleGrid articles={[]} loading={true} />
+        </>
+      ) : articles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32">
           <p className="text-base text-[var(--color-gray3)]">
             저장한 글이 없습니다
@@ -80,7 +89,7 @@ export default function BookmarksPage() {
 
           <ArticleGrid
             articles={articles}
-            loading={isLoading || isFetchingNextPage}
+            loading={isFetchingNextPage}
             onLoadMore={handleLoadMore}
             hasMore={!!hasNextPage}
           />

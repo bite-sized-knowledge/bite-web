@@ -55,7 +55,9 @@ export default function HistoryPage() {
         </h1>
       </header>
 
-      {articles.length === 0 && !isLoading ? (
+      {isLoading ? (
+        <ArticleGrid articles={[]} loading={true} />
+      ) : articles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32">
           <p className="text-base text-[var(--color-gray3)]">
             최근 본 글이 없습니다
@@ -64,7 +66,7 @@ export default function HistoryPage() {
       ) : (
         <ArticleGrid
           articles={articles}
-          loading={isLoading || isFetchingNextPage}
+          loading={isFetchingNextPage}
           onLoadMore={handleLoadMore}
           hasMore={!!hasNextPage}
         />

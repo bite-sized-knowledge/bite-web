@@ -48,7 +48,7 @@ export default function ArticleGrid({
           <MiniCard key={article.id ?? index} article={article} />
         ))}
         {loading &&
-          Array.from({ length: 4 }).map((_, i) => (
+          Array.from({ length: articles.length === 0 ? 8 : 4 }).map((_, i) => (
             <MiniCardSkeleton key={`skeleton-${i}`} />
           ))}
       </div>

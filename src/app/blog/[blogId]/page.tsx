@@ -70,11 +70,15 @@ export default function BlogPage({
             unoptimized
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-[var(--color-gray4)]" />
+          <div className="w-8 h-8 rounded-full bg-[var(--color-gray4)] animate-pulse" />
         )}
-        <h1 className="text-xl font-bold text-[var(--color-text)] truncate">
-          {blogData?.title ?? ''}
-        </h1>
+        {blogData?.title ? (
+          <h1 className="text-xl font-bold text-[var(--color-text)] truncate">
+            {blogData.title}
+          </h1>
+        ) : (
+          <div className="h-5 w-32 rounded bg-[var(--color-gray4)] animate-pulse" />
+        )}
       </header>
 
       <ArticleGrid
