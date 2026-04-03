@@ -20,7 +20,7 @@ export default async function OgImage() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%)',
+          background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1a0e 50%, #1a1a1a 100%)',
           fontFamily: 'sans-serif',
         }}
       >
@@ -34,7 +34,7 @@ export default async function OgImage() {
           style={{
             fontSize: 64,
             fontWeight: 800,
-            color: 'white',
+            color: '#FF6E1C',
             letterSpacing: '-2px',
             marginBottom: 16,
           }}
@@ -44,7 +44,7 @@ export default async function OgImage() {
         <div
           style={{
             fontSize: 30,
-            color: '#a0a0b0',
+            color: '#e0e0e0',
             marginBottom: 12,
           }}
         >
@@ -53,7 +53,7 @@ export default async function OgImage() {
         <div
           style={{
             fontSize: 20,
-            color: '#707080',
+            color: '#909090',
           }}
         >
           매일 한입 크기로 읽는 기술 블로그 큐레이션
