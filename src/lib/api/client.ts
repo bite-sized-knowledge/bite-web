@@ -16,20 +16,6 @@ const getApiErrorMessage = (result: ApiErrorResult | unknown) => {
   return '네트워크 에러가 발생했습니다';
 };
 
-const getCloudflareAccessHeaders = (): Record<string, string> => {
-  const clientId = process.env.NEXT_PUBLIC_CF_ACCESS_CLIENT_ID;
-  const clientSecret = process.env.NEXT_PUBLIC_CF_ACCESS_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    return {};
-  }
-
-  return {
-    'CF-Access-Client-Id': clientId,
-    'CF-Access-Client-Secret': clientSecret,
-  };
-};
-
 export class ApiClient {
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
@@ -78,7 +64,6 @@ export class ApiClient {
 
       const headers: Record<string, string> = {
         ...this.defaultHeaders,
-        ...getCloudflareAccessHeaders(),
         ...(authRequired && accessToken
           ? { Authorization: `Bearer ${accessToken}` }
           : {}),
