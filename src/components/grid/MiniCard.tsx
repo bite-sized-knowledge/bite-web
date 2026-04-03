@@ -28,7 +28,7 @@ export default function MiniCard({ article, isPlaceholder }: MiniCardProps) {
   }
 
   const thumbnail =
-    article.thumbnail || article.category?.thumbnail || article.category?.image;
+    article.thumbnail || article.category?.thumbnail || article.category?.image || '/default-thumbnail.png';
 
   const handleClick = () => {
     try {
@@ -49,18 +49,14 @@ export default function MiniCard({ article, isPlaceholder }: MiniCardProps) {
     >
       {/* Image */}
       <div className="w-full h-[80px] overflow-hidden">
-        {thumbnail ? (
-          <Image
-            src={thumbnail}
-            alt={article.title}
-            width={160}
-            height={80}
-            className="w-full h-full object-cover rounded-t-lg"
-            unoptimized
-          />
-        ) : (
-          <div className="w-full h-full bg-[var(--color-gray4)] rounded-t-lg" />
-        )}
+        <Image
+          src={thumbnail}
+          alt={article.title}
+          width={160}
+          height={80}
+          className="w-full h-full object-cover rounded-t-lg"
+          unoptimized
+        />
       </div>
 
       {/* Title */}
