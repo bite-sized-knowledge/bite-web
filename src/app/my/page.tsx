@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import { useTheme } from '@/lib/theme/provider';
@@ -13,28 +13,24 @@ export default function MyPage() {
   const router = useRouter();
   const { isLoggedIn, logout } = useAuth();
   const { themeMode, toggleTheme } = useTheme();
-  const [showModal, setShowModal] = useState(false);
-  const [userName, setUserName] = useState<string>('');
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setShowModal(true);
-      return;
-    }
+  const showModal = !isLoggedIn;
+  const userName = useMemo(() => {
+    if (!isLoggedIn) return '';
     const token = getAccessToken();
     if (token) {
       try {
         const decoded = decodeJwt(token) as { name?: string };
-        setUserName(decoded.name ?? '');
+        return decoded.name ?? '';
       } catch {
         // ignore
       }
     }
+    return '';
   }, [isLoggedIn]);
 
   if (!isLoggedIn) {
     return (
-      <MemberModal open={showModal} onClose={() => setShowModal(false)} />
+      <MemberModal open={showModal} onClose={() => router.back()} />
     );
   }
 

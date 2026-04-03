@@ -22,24 +22,18 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [themeMode, setThemeMode] = useState<ThemeMode>('light');
-  const [isSystemTheme, setIsSystemTheme] = useState(false);
-
-  // 초기 테마 설정
-  useEffect(() => {
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    if (typeof window === 'undefined') return 'light';
     const savedTheme = localStorage.getItem('theme') as ThemeMode | null;
-
-    if (savedTheme) {
-      setThemeMode(savedTheme);
-      setIsSystemTheme(false);
-    } else {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-      setThemeMode(systemTheme);
-      setIsSystemTheme(true);
-    }
-  }, []);
+    if (savedTheme) return savedTheme;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
+  });
+  const [isSystemTheme, setIsSystemTheme] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !localStorage.getItem('theme');
+  });
 
   // Apply dark class to documentElement
   useEffect(() => {

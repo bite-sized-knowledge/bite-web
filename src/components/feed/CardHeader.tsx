@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Blog } from '@/types/Blog';
 
@@ -17,13 +18,16 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ blog }) => {
       >
         <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full bg-[#d9d9d9]">
           {blog.favicon && (
-            <img
+            <Image
               src={blog.favicon}
               alt={blog.title}
+              width={24}
+              height={24}
               className="h-full w-full object-cover"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
+              unoptimized
             />
           )}
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Article } from '@/types/Article';
 import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
 
@@ -23,11 +24,13 @@ export const CardBody: React.FC<CardBodyProps> = ({ article }) => {
       className="block w-full text-left"
     >
       {thumbnail ? (
-        <img
+        <Image
           src={thumbnail}
           alt={article.title}
+          width={400}
+          height={160}
           className="h-[160px] w-full object-cover"
-          loading="lazy"
+          unoptimized
         />
       ) : (
         <div className="flex h-[160px] w-full items-center justify-center bg-[var(--color-gray4)]">

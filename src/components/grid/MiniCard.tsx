@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Article } from '@/types/Article';
 import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
 
@@ -43,10 +44,13 @@ export default function MiniCard({ article, isPlaceholder }: MiniCardProps) {
       {/* Image */}
       <div className="w-full h-[80px] overflow-hidden">
         {thumbnail ? (
-          <img
+          <Image
             src={thumbnail}
             alt={article.title}
+            width={160}
+            height={80}
             className="w-full h-full object-cover rounded-t-lg"
+            unoptimized
           />
         ) : (
           <div className="w-full h-full bg-[var(--color-gray4)] rounded-t-lg" />

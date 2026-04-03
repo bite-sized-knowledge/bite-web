@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import MemberModal from '@/components/auth/MemberModal';
@@ -17,28 +17,23 @@ interface JwtPayload {
 export default function MyDetailPage() {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
-  const [showModal, setShowModal] = useState(false);
-  const [userInfo, setUserInfo] = useState<JwtPayload | null>(null);
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setShowModal(true);
-      return;
-    }
+  const showModal = !isLoggedIn;
+  const userInfo = useMemo(() => {
+    if (!isLoggedIn) return null;
     const token = getAccessToken();
     if (token) {
       try {
-        const decoded = decodeJwt(token) as JwtPayload;
-        setUserInfo(decoded);
+        return decodeJwt(token) as JwtPayload;
       } catch {
         // ignore
       }
     }
+    return null;
   }, [isLoggedIn]);
 
   if (!isLoggedIn) {
     return (
-      <MemberModal open={showModal} onClose={() => setShowModal(false)} />
+      <MemberModal open={showModal} onClose={() => router.back()} />
     );
   }
 

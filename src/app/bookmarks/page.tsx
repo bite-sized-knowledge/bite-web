@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import { useBookmarkedArticles } from '@/hooks/useBookmarkedArticles';
 import ArticleGrid from '@/components/grid/ArticleGrid';
@@ -10,24 +11,21 @@ import { getAccessToken } from '@/lib/api/auth';
 import { decodeJwt } from 'jose';
 
 export default function BookmarksPage() {
+  const router = useRouter();
   const { isLoggedIn } = useAuth();
-  const [showModal, setShowModal] = useState(false);
-  const [userName, setUserName] = useState<string>('');
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setShowModal(true);
-      return;
-    }
+  const showModal = !isLoggedIn;
+  const userName = useMemo(() => {
+    if (!isLoggedIn) return '';
     const token = getAccessToken();
     if (token) {
       try {
         const decoded = decodeJwt(token) as { name?: string };
-        setUserName(decoded.name ?? '');
+        return decoded.name ?? '';
       } catch {
         // ignore
       }
     }
+    return '';
   }, [isLoggedIn]);
 
   const {
@@ -51,7 +49,7 @@ export default function BookmarksPage() {
 
   if (!isLoggedIn) {
     return (
-      <MemberModal open={showModal} onClose={() => setShowModal(false)} />
+      <MemberModal open={showModal} onClose={() => router.back()} />
     );
   }
 

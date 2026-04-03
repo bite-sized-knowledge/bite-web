@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, use } from 'react';
+import Image from 'next/image';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getBlog, getBlogArticle } from '@/lib/api/blog';
 import ArticleGrid from '@/components/grid/ArticleGrid';
@@ -60,10 +61,13 @@ export default function BlogPage({
       {/* Header */}
       <header className="flex items-center h-[var(--header-height)] px-4 gap-3">
         {blogData?.favicon ? (
-          <img
+          <Image
             src={blogData.favicon}
             alt=""
+            width={32}
+            height={32}
             className="w-8 h-8 rounded-full object-cover"
+            unoptimized
           />
         ) : (
           <div className="w-8 h-8 rounded-full bg-[var(--color-gray4)]" />

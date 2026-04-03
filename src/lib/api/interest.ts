@@ -27,7 +27,7 @@ export const getGuestAccount = async (interestIds: number[]) => {
     setRefreshToken(data.token.refreshToken);
 
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 };

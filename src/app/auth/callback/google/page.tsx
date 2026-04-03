@@ -40,20 +40,18 @@ function GoogleCallbackContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setLoggedIn } = useAuth();
-  const [error, setError] = useState('');
+  const code = searchParams.get('code');
+  const [error, setError] = useState(() => code ? '' : '인증 코드가 없습니다.');
 
   useEffect(() => {
-    const code = searchParams.get('code');
+    if (!code) return;
 
-    if (!code) {
-      setError('인증 코드가 없습니다.');
-      return;
-    }
-
+    let cancelled = false;
     const handleCallback = async () => {
       try {
         const success = await oauthGoogle(code);
 
+        if (cancelled) return;
         if (success) {
           setLoggedIn(true);
           router.push('/feed');
@@ -61,12 +59,13 @@ function GoogleCallbackContent() {
           setError('Google 로그인에 실패했습니다.');
         }
       } catch {
-        setError('오류가 발생했습니다.');
+        if (!cancelled) setError('오류가 발생했습니다.');
       }
     };
 
     handleCallback();
-  }, [searchParams, router, setLoggedIn]);
+    return () => { cancelled = true; };
+  }, [code, router, setLoggedIn]);
 
   if (error) {
     return (

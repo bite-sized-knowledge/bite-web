@@ -84,7 +84,7 @@ export const login = async (email: string, password: string) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -106,7 +106,7 @@ export const verifyEmail = async (email: string): Promise<boolean> => {
       false,
     );
     return data ?? false;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -119,7 +119,7 @@ export const checkNameDuplication = async (name: string) => {
       false,
     );
     return error === null;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -148,7 +148,7 @@ export const signUp = async ({ email, password, birth }: SignUpParam) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -163,7 +163,7 @@ export const withDraw = async (memberId: string) => {
     }
 
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -180,7 +180,7 @@ export const changePassword = async (
 
     if (error) return false;
     return status;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -196,7 +196,7 @@ export const resetPassword = async (email: string) => {
 
     if (error) return false;
     return status;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -212,7 +212,7 @@ export const passwordMatch = async (email: string, password: string) => {
 
     if (!error && data) return true;
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -234,7 +234,7 @@ export const oauthGithub = async (code: string) => {
     }
 
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -255,7 +255,7 @@ export const oauthGoogle = async (code: string) => {
     }
 
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 };

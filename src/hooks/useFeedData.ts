@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useReducer } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getRecommendedFeed, getRecentFeed } from '@/lib/api/feed';
 import { Article } from '@/types/Article';
@@ -19,10 +19,23 @@ function mergeWithoutDuplicates(prev: Article[], next: Article[]): Article[] {
   return merged;
 }
 
+type ArticleAction =
+  | { type: 'merge'; articles: Article[] }
+  | { type: 'reset' };
+
+function articleReducer(state: Article[], action: ArticleAction): Article[] {
+  switch (action.type) {
+    case 'merge':
+      return mergeWithoutDuplicates(state, action.articles);
+    case 'reset':
+      return [];
+  }
+}
+
 export function useFeedData(selectedTab: TabType) {
-  const [recommendedArticles, setRecommendedArticles] = useState<Article[]>([]);
-  const [recentArticles, setRecentArticles] = useState<Article[]>([]);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [recommendedArticles, dispatchRecommended] = useReducer(articleReducer, []);
+  const [recentArticles, dispatchRecent] = useReducer(articleReducer, []);
+  const [fetchMoreRequested, setFetchMoreRequested] = useState(false);
   const [from, setFrom] = useState<string | null>(null);
 
   // Recommended feed
@@ -53,23 +66,20 @@ export function useFeedData(selectedTab: TabType) {
     enabled: false,
   });
 
+  // Derive isFetchingMore from request state and fetching state
+  const isFetchingMore = fetchMoreRequested && (isRecommendedFetching || isRecentFetching);
+
   // Update recommended articles when data arrives
   useEffect(() => {
-    if (recommendedFeed?.data) {
-      setRecommendedArticles((prev) => {
-        setIsFetchingMore(false);
-        return mergeWithoutDuplicates(prev, recommendedFeed.data ?? []);
-      });
+    if (recommendedFeed?.data && !isRecommendedFetching) {
+      dispatchRecommended({ type: 'merge', articles: recommendedFeed.data ?? [] });
     }
   }, [recommendedFeed, isRecommendedFetching]);
 
   // Update recent articles when data arrives
   useEffect(() => {
-    if (recentFeedData) {
-      setRecentArticles((prev) => {
-        setIsFetchingMore(false);
-        return mergeWithoutDuplicates(prev, recentFeedData.articles ?? []);
-      });
+    if (recentFeedData && !isRecentFetching) {
+      dispatchRecent({ type: 'merge', articles: recentFeedData.articles ?? [] });
     }
   }, [recentFeedData, isRecentFetching]);
 
@@ -88,13 +98,11 @@ export function useFeedData(selectedTab: TabType) {
 
   const getNextData = useCallback(() => {
     if (isFetchingMore) return;
-    setIsFetchingMore(true);
+    setFetchMoreRequested(true);
 
     if (selectedTab === 'latest') {
       if (recentFeedData?.next) {
         setFrom(recentFeedData.next);
-      } else {
-        setIsFetchingMore(false);
       }
     } else {
       refetchRecommended();

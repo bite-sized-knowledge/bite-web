@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import { useHistory } from '@/hooks/useHistory';
@@ -11,13 +11,7 @@ import { Article } from '@/types/Article';
 export default function HistoryPage() {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
-  const [showModal, setShowModal] = useState(false);
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setShowModal(true);
-    }
-  }, [isLoggedIn]);
+  const showModal = !isLoggedIn;
 
   const {
     data,
@@ -40,7 +34,7 @@ export default function HistoryPage() {
 
   if (!isLoggedIn) {
     return (
-      <MemberModal open={showModal} onClose={() => setShowModal(false)} />
+      <MemberModal open={showModal} onClose={() => router.back()} />
     );
   }
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { getInterests, getGuestAccount } from '@/lib/api/interest';
 import Button from '@/components/ui/Button';
@@ -112,10 +113,13 @@ export default function InterestPage() {
                 </span>
 
                 {interest.image && (
-                  <img
+                  <Image
                     src={interest.image}
                     alt={interest.name}
+                    width={64}
+                    height={64}
                     className="absolute bottom-2 right-2 w-[40%] h-[40%] object-contain"
+                    unoptimized
                   />
                 )}
 
