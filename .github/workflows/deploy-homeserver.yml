@@ -1,0 +1,52 @@
+name: Deploy Bite Web to Home Server
+
+on:
+  workflow_run:
+    workflows: ["Bite Web CI"]
+    branches: ["main"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Check deploy secrets
+        id: deploy_guard
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_PORT" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy bite-web on home server
+        if: steps.deploy_guard.outputs.enabled == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd ~/projects/infra
+            docker compose pull bite-web
+            docker compose up -d bite-web
+            ATTEMPTS=15
+            for i in $(seq 1 $ATTEMPTS); do
+              STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || true)
+              if [ "$STATUS_CODE" = "200" ]; then
+                exit 0
+              fi
+              sleep 4
+            done
+            echo "health check failed"
+            exit 1
