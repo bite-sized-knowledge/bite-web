@@ -41,10 +41,17 @@ function GitHubCallbackContent() {
   const router = useRouter();
   const { setLoggedIn } = useAuth();
   const code = searchParams.get('code');
-  const [error, setError] = useState(() => code ? '' : '인증 코드가 없습니다.');
+  const urlState = searchParams.get('state');
+  const [error, setError] = useState(() => {
+    if (!code) return '인증 코드가 없습니다.';
+    const storedState = sessionStorage.getItem('oauth_state_github');
+    if (!urlState || urlState !== storedState) return '잘못된 인증 요청입니다.';
+    sessionStorage.removeItem('oauth_state_github');
+    return '';
+  });
 
   useEffect(() => {
-    if (!code) return;
+    if (!code || error) return;
 
     let cancelled = false;
     const handleCallback = async () => {

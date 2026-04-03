@@ -73,6 +73,7 @@ export class ApiClient {
       const response = await this.fetchWithTimeout(url, {
         ...options,
         headers,
+        credentials: 'include',
       });
 
       // 만약 토큰이 만료되었을 경우 (401 Unauthorized), 리프레시 토큰으로 새로운 액세스 토큰을 발급받고 다시 요청

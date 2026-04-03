@@ -36,8 +36,14 @@ export default function WithdrawPage() {
 
       const result = await withDraw(memberId);
       if (result) {
+        // Clear httpOnly refresh token cookie
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+          });
+        } catch { /* ignore */ }
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
         router.push('/auth/login');
       } else {
         alert('회원 탈퇴에 실패했습니다. 다시 시도해주세요.');

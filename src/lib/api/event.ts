@@ -43,7 +43,7 @@ export const sendEvent = (
       targetId,
       eventType,
     });
-  } catch (e) {
-    console.log(e);
+  } catch {
+    // silently ignore event tracking failures
   }
 };

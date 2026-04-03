@@ -31,8 +31,14 @@ export default function MiniCard({ article, isPlaceholder }: MiniCardProps) {
     article.thumbnail || article.category?.thumbnail || article.category?.image;
 
   const handleClick = () => {
+    try {
+      const parsed = new URL(article.url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return;
+    } catch {
+      return;
+    }
     sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.ARTICLE_CLICK);
-    window.open(article.url, '_blank');
+    window.open(article.url, '_blank', 'noopener,noreferrer');
   };
 
   return (

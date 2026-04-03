@@ -28,8 +28,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const router = useRouter();
 
   const logout = async () => {
+    // Clear httpOnly refresh token cookie via server
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // ignore logout API errors
+    }
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('interestIds');
 
     setToken(null);

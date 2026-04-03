@@ -33,17 +33,27 @@ function GoogleIcon() {
   );
 }
 
+function generateOAuthState(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export default function OAuthButtons() {
   const handleGitHub = () => {
     const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
     const redirectUri = `${window.location.origin}/auth/callback/github`;
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
+    const state = generateOAuthState();
+    sessionStorage.setItem('oauth_state_github', state);
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email&state=${encodeURIComponent(state)}`;
   };
 
   const handleGoogle = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     const redirectUri = `${window.location.origin}/auth/callback/google`;
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile`;
+    const state = generateOAuthState();
+    sessionStorage.setItem('oauth_state_google', state);
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(state)}`;
   };
 
   return (
