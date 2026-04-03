@@ -99,7 +99,7 @@ export const CardFooter: React.FC<CardFooterProps> = ({ article }) => {
   }, [article.url, shareMutation, hasShared]);
 
   return (
-    <div className="flex items-center px-3 py-4">
+    <div className="feed-card-footer flex items-center">
       <div className="flex flex-1 items-center gap-4">
         <button
           onClick={handleLike}

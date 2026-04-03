@@ -89,6 +89,14 @@ export function useFeedData(selectedTab: TabType) {
     refetchRecommended();
   }, [refetchRecent, refetchRecommended]);
 
+  // Refetch recommended when switching to recommend tab
+  useEffect(() => {
+    if (selectedTab === 'recommend') {
+      dispatchRecommended({ type: 'reset' });
+      refetchRecommended();
+    }
+  }, [selectedTab, refetchRecommended]);
+
   // Refetch recent when `from` changes
   useEffect(() => {
     if (from !== null) {

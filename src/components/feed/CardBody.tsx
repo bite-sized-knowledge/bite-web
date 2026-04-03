@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { Article } from '@/types/Article';
 import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
 
@@ -11,7 +10,7 @@ interface CardBodyProps {
 
 export const CardBody: React.FC<CardBodyProps> = ({ article }) => {
   const thumbnail =
-    article.thumbnail || article.category?.thumbnail || '/default-thumbnail.png';
+    article.thumbnail || article.category?.thumbnail || null;
 
   const handleClick = () => {
     try {
@@ -25,24 +24,25 @@ export const CardBody: React.FC<CardBodyProps> = ({ article }) => {
   };
 
   return (
-    <button
-      onClick={handleClick}
-      className="block w-full text-left"
-    >
-      <Image
-        src={thumbnail}
-        alt={article.title}
-        width={640}
-        height={280}
-        className="h-[160px] w-full object-cover lg:h-[280px]"
-        unoptimized
-      />
+    <button onClick={handleClick} className="block w-full text-left">
+      {thumbnail ? (
+        <img
+          src={thumbnail}
+          alt={article.title}
+          className="feed-thumbnail w-full object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div className="feed-thumbnail flex w-full items-center justify-center bg-[var(--color-gray4)]">
+          <span className="text-4xl text-[var(--color-gray3)]">B</span>
+        </div>
+      )}
 
-      <div className="min-h-[128px] px-3 pt-4 pb-3 lg:px-5 lg:pt-5 lg:pb-4 lg:min-h-[160px]">
-        <h3 className="mb-2 line-clamp-2 text-xl font-semibold text-[var(--color-text)] lg:text-2xl">
+      <div className="feed-card-content">
+        <h3 className="feed-card-title line-clamp-2 font-semibold text-[var(--color-text)]">
           {article.title}
         </h3>
-        <p className="mb-4 line-clamp-3 text-base text-[var(--color-gray1)] lg:text-lg">
+        <p className="feed-card-desc line-clamp-2 text-[var(--color-gray1)]">
           {article.description}
         </p>
         {article.keywords.length > 0 && (

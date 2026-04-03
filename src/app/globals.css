@@ -13,8 +13,8 @@
   --color-green: #34C759;
   --color-card-bg: #FAFAFA;
 
-  --header-height: 64px;
-  --tabbar-height: 64px;
+  --header-height: 48px;
+  --tabbar-height: 56px;
   --card-radius: 16px;
   --minicard-radius: 8px;
 }
@@ -33,4 +33,144 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+/* =============================================
+   Feed Page Layout
+   ============================================= */
+
+/* Main wrapper: full viewport, flex column */
+.feed-main {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+/* Body area below header: takes remaining space */
+.feed-body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Scrollable snap container */
+.feed-scroll-area {
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.feed-scroll-area::-webkit-scrollbar {
+  display: none;
+}
+
+/* Each full-page snap slot */
+.feed-snap-item {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* =============================================
+   Card Sizing — Mobile (default)
+   ============================================= */
+.feed-card-sizer {
+  width: calc(100% - 32px);
+  max-width: 420px;
+}
+
+.feed-thumbnail {
+  height: 140px;
+}
+
+.feed-card-header {
+  padding: 10px 12px 8px;
+}
+
+.feed-card-content {
+  padding: 12px 12px 10px;
+}
+
+.feed-card-title {
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+
+.feed-card-desc {
+  font-size: 0.875rem;
+  margin-bottom: 10px;
+}
+
+.feed-card-footer {
+  padding: 10px 12px;
+}
+
+/* =============================================
+   Card Sizing — PC (min-width: 1024px)
+   ============================================= */
+@media (min-width: 1024px) {
+  .feed-card-sizer {
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .feed-thumbnail {
+    height: 36vh;
+  }
+
+  .feed-card-header {
+    padding: 16px 20px 12px;
+  }
+
+  .feed-card-content {
+    padding: 20px 20px 16px;
+  }
+
+  .feed-card-title {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+  }
+
+  .feed-card-desc {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    -webkit-line-clamp: 3;
+  }
+
+  .feed-card-footer {
+    padding: 12px 20px 16px;
+  }
+}
+
+/* =============================================
+   Skeleton shimmer animation
+   ============================================= */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%
+  );
 }

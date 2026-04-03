@@ -1,13 +1,11 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const HIDDEN_PATHS = ['/auth', '/interest'];
 
 export function NavigationPadding({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { isDesktop } = useMediaQuery();
 
   const shouldHide = HIDDEN_PATHS.some(
     (path) => pathname === path || pathname.startsWith(path + '/')
@@ -17,14 +15,9 @@ export function NavigationPadding({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // Use CSS media query instead of JS to avoid hydration mismatch
   return (
-    <div
-      style={
-        isDesktop
-          ? { paddingLeft: 80 }
-          : { paddingBottom: 'var(--tabbar-height)' as string }
-      }
-    >
+    <div className="pb-[var(--tabbar-height)] lg:pb-0 lg:pl-[80px]">
       {children}
     </div>
   );

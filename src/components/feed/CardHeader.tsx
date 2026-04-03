@@ -11,7 +11,7 @@ interface CardHeaderProps {
 
 export const CardHeader: React.FC<CardHeaderProps> = ({ blog }) => {
   return (
-    <div className="flex items-center px-3 pt-4 pb-3">
+    <div className="feed-card-header flex items-center">
       <Link
         href={`/blog/${blog.id}`}
         className="flex flex-1 items-center gap-2"

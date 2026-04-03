@@ -1,16 +1,29 @@
 'use client';
 
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { FeedHeader } from '@/components/feed/FeedHeader';
 import { FeedContainer } from '@/components/feed/FeedContainer';
 import { useFeedData } from '@/hooks/useFeedData';
 
 type TabType = 'latest' | 'recommend';
 
+const variants = {
+  enter: (dir: number) => ({ x: dir * 60, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir * -60, opacity: 0 }),
+};
+
 export default function FeedPage() {
   const [selectedTab, setSelectedTab] = useState<TabType>('latest');
+  const [direction, setDirection] = useState(0);
   const { articles, isLoading, isFetchingMore, isError, error, getNextData } =
     useFeedData(selectedTab);
+
+  const handleTabChange = (tab: TabType) => {
+    setDirection(tab === 'recommend' ? 1 : -1);
+    setSelectedTab(tab);
+  };
 
   if (isError) {
     return (
@@ -23,15 +36,28 @@ export default function FeedPage() {
   }
 
   return (
-    <main className="h-screen bg-[var(--color-bg)]">
-      <FeedHeader selectedTab={selectedTab} onTabChange={setSelectedTab} />
-      <FeedContainer
-        articles={articles}
-        isLoading={isLoading}
-        isFetchingMore={isFetchingMore}
-        getNextData={getNextData}
-        selectedTab={selectedTab}
-      />
+    <main className="feed-main">
+      <FeedHeader selectedTab={selectedTab} onTabChange={handleTabChange} />
+      <AnimatePresence mode="wait" custom={direction} initial={false}>
+        <motion.div
+          key={selectedTab}
+          custom={direction}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="feed-body"
+        >
+          <FeedContainer
+            articles={articles}
+            isLoading={isLoading}
+            isFetchingMore={isFetchingMore}
+            getNextData={getNextData}
+            selectedTab={selectedTab}
+          />
+        </motion.div>
+      </AnimatePresence>
     </main>
   );
 }

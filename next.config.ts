@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  allowedDevOrigins: ['dev.bite-sized.xyz'],
   productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
