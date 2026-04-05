@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { oauthGithub } from '@/lib/api/auth';
 import { useAuth } from '@/lib/auth/provider';
@@ -42,22 +42,29 @@ function GitHubCallbackContent() {
   const { setLoggedIn } = useAuth();
   const code = searchParams.get('code');
   const urlState = searchParams.get('state');
-  const [error, setError] = useState(() => {
-    if (!code) return '인증 코드가 없습니다.';
-    const storedState = sessionStorage.getItem('oauth_state_github');
-    if (!urlState || urlState !== storedState) return '잘못된 인증 요청입니다.';
-    sessionStorage.removeItem('oauth_state_github');
-    return '';
-  });
+  const [error, setError] = useState('');
+  const processedCodeRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!code || error) return;
+    if (!code) {
+      setError('인증 코드가 없습니다.');
+      return;
+    }
+    // Strict-mode double-invoke guard: skip if we already started for this code.
+    if (processedCodeRef.current === code) return;
+    processedCodeRef.current = code;
+
+    const storedState = sessionStorage.getItem('oauth_state_github');
+    if (!urlState || urlState !== storedState) {
+      setError('잘못된 인증 요청입니다.');
+      return;
+    }
+    sessionStorage.removeItem('oauth_state_github');
 
     let cancelled = false;
-    const handleCallback = async () => {
+    (async () => {
       try {
         const success = await oauthGithub(code);
-
         if (cancelled) return;
         if (success) {
           setLoggedIn(true);
@@ -68,11 +75,9 @@ function GitHubCallbackContent() {
       } catch {
         if (!cancelled) setError('오류가 발생했습니다.');
       }
-    };
-
-    handleCallback();
+    })();
     return () => { cancelled = true; };
-  }, [code, router, setLoggedIn]);
+  }, [code, urlState, router, setLoggedIn]);
 
   if (error) {
     return (
