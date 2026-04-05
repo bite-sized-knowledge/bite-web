@@ -69,10 +69,10 @@ export const getHistory = async (
 };
 
 export const searchArticles = async (query: string, signal?: AbortSignal) => {
-  const { data } = await api.get<Article[]>(
+  const { data } = await api.get<{ articles: Article[] }>(
     `/v1/articles/search?query=${encodeURIComponent(query)}`,
     { signal },
     false,
   );
-  return data ?? [];
+  return data?.articles ?? [];
 };
