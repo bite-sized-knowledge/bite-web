@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
+import { useTheme } from '@/lib/theme/provider';
 import { useBookmarkedArticles } from '@/hooks/useBookmarkedArticles';
 import ArticleGrid from '@/components/grid/ArticleGrid';
 import MemberModal from '@/components/auth/MemberModal';
@@ -13,6 +15,7 @@ import { decodeJwt } from 'jose';
 export default function BookmarksPage() {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
+  const { themeMode } = useTheme();
   const showModal = !isLoggedIn;
   const userName = useMemo(() => {
     if (!isLoggedIn) return '';
@@ -54,7 +57,7 @@ export default function BookmarksPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg)]">
+    <main className="min-h-svh bg-[var(--color-bg)]">
       {/* Header */}
       <header className="flex items-center h-[var(--header-height)] px-4">
         <h1 className="text-xl font-bold text-[var(--color-text)]">
@@ -72,7 +75,18 @@ export default function BookmarksPage() {
           <ArticleGrid articles={[]} loading={true} />
         </>
       ) : articles.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32">
+        <div className="flex flex-col items-center justify-center gap-6 py-24">
+          <Image
+            src={
+              themeMode === 'dark'
+                ? '/images/empty_bookmark_dark.png'
+                : '/images/empty_bookmark_light.png'
+            }
+            alt=""
+            width={180}
+            height={180}
+            aria-hidden
+          />
           <p className="text-base text-[var(--color-gray3)]">
             저장한 글이 없습니다
           </p>
@@ -81,7 +95,16 @@ export default function BookmarksPage() {
         <>
           {/* Profile section */}
           <div className="flex items-center gap-2 px-4 py-5">
-            <div className="w-12 h-12 rounded-full bg-[var(--color-gray4)] shrink-0" />
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[var(--color-gray4)]">
+              <Image
+                src="/images/profileImage.png"
+                alt=""
+                fill
+                sizes="48px"
+                className="object-cover"
+                aria-hidden
+              />
+            </div>
             <span className="text-lg font-bold text-[var(--color-text)]">
               {userName}
             </span>

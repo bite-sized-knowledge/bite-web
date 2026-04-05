@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Article } from '@/types/Article';
-import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
+import { useArticleReaderEvents } from '@/hooks/useArticleReaderEvents';
 
 interface CardBodyProps {
   article: Article;
@@ -11,16 +11,10 @@ interface CardBodyProps {
 export const CardBody: React.FC<CardBodyProps> = ({ article }) => {
   const thumbnail =
     article.thumbnail || article.category?.thumbnail || null;
+  const { openArticle } = useArticleReaderEvents();
 
   const handleClick = () => {
-    try {
-      const parsed = new URL(article.url);
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return;
-    } catch {
-      return;
-    }
-    sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.ARTICLE_CLICK);
-    window.open(article.url, '_blank', 'noopener,noreferrer');
+    openArticle(article.id, article.url);
   };
 
   return (

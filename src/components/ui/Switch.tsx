@@ -1,12 +1,14 @@
 'use client';
 
-import React from 'react';
+import { ReactNode } from 'react';
 
 interface SwitchProps {
   checked: boolean;
   onChange: () => void;
   activeLabel?: string;
   inactiveLabel?: string;
+  activeIcon?: ReactNode;
+  inactiveIcon?: ReactNode;
 }
 
 export default function Switch({
@@ -14,6 +16,8 @@ export default function Switch({
   onChange,
   activeLabel,
   inactiveLabel,
+  activeIcon,
+  inactiveIcon,
 }: SwitchProps) {
   return (
     <button
@@ -27,23 +31,23 @@ export default function Switch({
           : 'bg-[var(--color-gray3)]'
       }`}
     >
-      {/* Labels inside track */}
-      {activeLabel && (
+      {/* Track indicators (text labels and/or icons) */}
+      {(activeLabel || activeIcon) && (
         <span
-          className={`absolute left-1.5 text-xs font-medium text-white transition-opacity ${
+          className={`absolute left-1.5 flex items-center text-xs font-medium text-white transition-opacity ${
             checked ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          {activeLabel}
+          {activeIcon ?? activeLabel}
         </span>
       )}
-      {inactiveLabel && (
+      {(inactiveLabel || inactiveIcon) && (
         <span
-          className={`absolute right-1.5 text-xs font-medium text-white transition-opacity ${
+          className={`absolute right-1.5 flex items-center text-xs font-medium text-white transition-opacity ${
             checked ? 'opacity-0' : 'opacity-100'
           }`}
         >
-          {inactiveLabel}
+          {inactiveIcon ?? inactiveLabel}
         </span>
       )}
 

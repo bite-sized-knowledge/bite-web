@@ -143,6 +143,20 @@ export const withDraw = async (memberId: string) => {
   }
 };
 
+/**
+ * Verify that an email/password combination matches the current user's
+ * credentials. Implemented by attempting a login (the backend has no
+ * dedicated verify endpoint). Returns true on success without persisting
+ * any new tokens beyond what login() already stores.
+ */
+export const passwordMatch = async (
+  email: string,
+  password: string,
+): Promise<boolean> => {
+  if (!email) return false;
+  return login(email, password);
+};
+
 export const changePassword = async (
   currentPassword: string,
   newPassword: string,

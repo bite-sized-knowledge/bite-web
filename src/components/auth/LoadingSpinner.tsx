@@ -10,7 +10,7 @@ export default function LoadingSpinner({
   message?: string;
 }) {
   return (
-    <main className="min-h-screen flex items-center justify-center">
+    <main className="min-h-svh flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <svg
           className="animate-spin h-8 w-8 text-[var(--color-main)]"

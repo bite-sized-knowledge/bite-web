@@ -61,7 +61,7 @@ export default function InterestPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
+      <main className="min-h-svh flex items-center justify-center">
         <svg
           className="animate-spin h-8 w-8 text-[var(--color-main)]"
           xmlns="http://www.w3.org/2000/svg"
@@ -87,7 +87,7 @@ export default function InterestPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="min-h-svh flex flex-col">
       <div className="flex-1 w-full max-w-2xl mx-auto p-6">
         <h1 className="text-2xl font-semibold text-[var(--color-text)] mb-1">
           안녕하세요!
@@ -127,18 +127,13 @@ export default function InterestPage() {
                   <>
                     <div className="absolute inset-0 bg-[rgba(255,110,28,0.9)] rounded-lg" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <svg
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="white"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
+                      <Image
+                        src="/images/check.png"
+                        alt=""
+                        width={40}
+                        height={40}
+                        aria-hidden
+                      />
                     </div>
                   </>
                 )}

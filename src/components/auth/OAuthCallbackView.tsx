@@ -11,7 +11,7 @@ export default function OAuthCallbackView({ error }: { error: string }) {
   if (!error) return <LoadingSpinner />;
 
   return (
-    <main className="min-h-screen flex items-center justify-center">
+    <main className="min-h-svh flex items-center justify-center">
       <div className="text-center p-6">
         <p className="text-[var(--color-error)] mb-4">{error}</p>
         <Link

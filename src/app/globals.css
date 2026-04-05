@@ -13,6 +13,14 @@
   --color-green: #34C759;
   --color-card-bg: #FAFAFA;
 
+  /* Surface tokens — split out from gray4 so cards, borders and dividers
+     can each be tuned independently for contrast on light/dark. */
+  --color-border: #E5E5E5;
+  --color-divider: #EFEFEF;
+  --color-surface-hover: #F0F0F0;
+  --color-disabled-bg: #E5E5E5;
+  --color-disabled-text: #9F9F9F;
+
   --header-height: 48px;
   --tabbar-height: 56px;
   --card-radius: 16px;
@@ -20,13 +28,33 @@
 }
 
 .dark {
-  --color-bg: #171717;
+  --color-bg: #121212;
   --color-text: #FAFAFA;
   --color-gray1: #F0F0F0;
-  --color-gray2: #434343;
-  --color-gray3: #9F9F9F;
-  --color-gray4: #333333;
-  --color-card-bg: #333333;
+  --color-gray2: #BDBDBD;
+  --color-gray3: #A8A8A8;
+  --color-gray4: #2A2A2A;
+  --color-card-bg: #1F1F1F;
+
+  /* Dark-mode tokens tuned for readability:
+     - border: 3.2:1 contrast against bg so inputs are clearly outlined
+     - divider: softer, purely decorative
+     - surface-hover: matches card surface so hover feels "lifted"
+     - disabled-bg / text: noticeably visible while still "off" */
+  --color-border: #3F3F3F;
+  --color-divider: #2A2A2A;
+  --color-surface-hover: #2A2A2A;
+  --color-disabled-bg: #2F2F2F;
+  --color-disabled-text: #7A7A7A;
+}
+
+html,
+body {
+  /* Block the browser rubber-band / overscroll bounce from leaking
+     into the page when the feed carousel preventDefaults its wheel
+     events. Without this, macOS Chrome/Safari still briefly animate
+     the whole window during trackpad momentum. */
+  overscroll-behavior: none;
 }
 
 body {
@@ -37,15 +65,47 @@ body {
 
 /* =============================================
    Feed Page Layout
+
+   Key requirement: the feed card must be exactly centered in the
+   *visible* area of the viewport, i.e. excluding the mobile browser's
+   address bar / bottom toolbar and the app's own nav chrome.
+
+   - `height: 100svh` claims the "small viewport height" — the height
+     of the viewport when all collapsible browser UI (iOS Safari's
+     bottom toolbar, Android Chrome's top URL bar) is *visible*. This
+     guarantees nothing is hidden behind browser chrome at any scroll
+     position, and there is no body-level overflow as the chrome
+     collapses.
+   - `padding-bottom: var(--tabbar-height)` reserves space for the
+     fixed BottomTabBar so the center card never lands behind it.
+   - On desktop/landscape tablet we swap the bottom padding for a
+     left padding equal to the Sidebar width.
+   - `overflow: hidden` blocks any body-level scroll — only
+     `.feed-scroll-area` is scrollable.
    ============================================= */
 
-/* Main wrapper: full viewport, flex column */
+/* Main wrapper: exact visible viewport, flex column */
 .feed-main {
-  height: 100vh;
+  height: 100svh;
+  padding-bottom: var(--tabbar-height);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--color-bg);
+}
+
+/* Fallback for browsers without svh (older Safari / Chrome < 108) */
+@supports not (height: 100svh) {
+  .feed-main {
+    height: 100vh;
+  }
+}
+
+@media (min-width: 820px) and (orientation: landscape) {
+  .feed-main {
+    padding-bottom: 0;
+    padding-left: 80px; /* match .sidebar-nav width */
+  }
 }
 
 /* Body area below header: takes remaining space */
@@ -54,27 +114,40 @@ body {
   min-height: 0;
 }
 
-/* Scrollable snap container */
+/* ----- Feed scroll area (JS-driven carousel on a real scroll element) ----
+   FeedContainer fully drives this element via `scrollTo`. We do NOT use
+   CSS scroll-snap because its built-in "distance to cross to next snap"
+   threshold prevents small user gestures from advancing (a 120px wheel
+   tick would snap back to the current card). The JS layer treats every
+   deliberate wheel / touch / key event as "advance by one" and commits
+   it with a smooth programmatic scroll.
+
+   `overflow-y: scroll` instead of `hidden` so scrollTo has a real
+   scrolling context, and so keyboard PageDown/Up remain native.
+   ------------------------------------------------------------------------- */
 .feed-scroll-area {
+  width: 100%;
   height: 100%;
   overflow-y: scroll;
-  scroll-snap-type: y mandatory;
+  overflow-x: hidden;
+  overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  touch-action: pan-x pinch-zoom;
 }
 .feed-scroll-area::-webkit-scrollbar {
   display: none;
 }
 
-/* Each full-page snap slot */
+/* Each card occupies exactly one viewport page, flex-centered. */
 .feed-snap-item {
+  width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  flex: 0 0 100%;
 }
 
 /* =============================================
@@ -145,6 +218,140 @@ body {
 
   .feed-card-footer {
     padding: 12px 20px 16px;
+  }
+}
+
+/* =============================================
+   Responsive navigation
+
+   Strategy: render both Sidebar and BottomTabBar always (under the
+   ResponsiveNav wrapper) and flip visibility with CSS media queries.
+   This avoids any JS-based hydration flash and lets iPad orientation
+   changes update the layout instantly without a React re-render.
+
+   Desktop layout (Sidebar) kicks in for *landscape* viewports with
+   enough horizontal room — this matches typical desktop browsers AND
+   iPad in landscape, while iPad portrait and phones keep BottomTabBar.
+   ============================================= */
+.bottom-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--tabbar-height);
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-divider);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 50;
+}
+
+.bottom-tab-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  text-decoration: none;
+  color: var(--color-gray3);
+  transition: color 0.15s ease;
+}
+
+.bottom-tab-item[data-active='true'] {
+  color: var(--color-text);
+}
+
+.sidebar-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 80px;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-divider);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+  gap: 24px;
+  z-index: 50;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.sidebar-items {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--color-gray3);
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.sidebar-item[data-active='true'] {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+/* Default (mobile / iPad portrait): show BottomTabBar, hide Sidebar */
+.sidebar-nav {
+  display: none;
+}
+.bottom-tab-bar {
+  display: flex;
+}
+
+/* Desktop / iPad landscape: show Sidebar, hide BottomTabBar.
+   The orientation guard ensures iPad portrait stays mobile. */
+@media (min-width: 820px) and (orientation: landscape) {
+  .sidebar-nav {
+    display: flex;
+  }
+  .bottom-tab-bar {
+    display: none;
+  }
+}
+
+/* Layout padding: reserve space for whichever nav is visible */
+.nav-padding {
+  padding-bottom: var(--tabbar-height);
+}
+@media (min-width: 820px) and (orientation: landscape) {
+  .nav-padding {
+    padding-bottom: 0;
+    padding-left: 80px;
+  }
+}
+
+/* Hide search trigger in FeedHeader on desktop — Sidebar already has it */
+.feed-header-search {
+  display: flex;
+}
+@media (min-width: 820px) and (orientation: landscape) {
+  .feed-header-search {
+    display: none;
   }
 }
 

@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
 
   if (sent) {
     return (
-      <main className="min-h-screen flex items-start justify-center pt-20">
+      <main className="min-h-svh flex items-start justify-center pt-20">
         <div className="w-full max-w-md mx-auto p-6">
           <h1 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
             이메일을 확인해주세요!
@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-start justify-center pt-20">
+    <main className="min-h-svh flex items-start justify-center pt-20">
       <div className="w-full max-w-md mx-auto p-6">
         <h1 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
           비밀번호 재설정

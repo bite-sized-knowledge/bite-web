@@ -1,13 +1,13 @@
 'use client';
 
-import React from 'react';
 import Image from 'next/image';
 import { Article } from '@/types/Article';
-import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
+import { useArticleReaderEvents } from '@/hooks/useArticleReaderEvents';
 
 interface MiniCardProps {
   article: Article;
   isPlaceholder?: boolean;
+  onBeforeOpen?: (articleId: string) => void;
 }
 
 function MiniCardSkeleton() {
@@ -22,7 +22,13 @@ function MiniCardSkeleton() {
   );
 }
 
-export default function MiniCard({ article, isPlaceholder }: MiniCardProps) {
+export default function MiniCard({
+  article,
+  isPlaceholder,
+  onBeforeOpen,
+}: MiniCardProps) {
+  const { openArticle } = useArticleReaderEvents();
+
   if (isPlaceholder) {
     return <div className="min-w-[160px] min-h-[160px]" />;
   }
@@ -31,14 +37,8 @@ export default function MiniCard({ article, isPlaceholder }: MiniCardProps) {
     article.thumbnail || article.category?.thumbnail || article.category?.image || '/default-thumbnail.png';
 
   const handleClick = () => {
-    try {
-      const parsed = new URL(article.url);
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return;
-    } catch {
-      return;
-    }
-    sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.ARTICLE_CLICK);
-    window.open(article.url, '_blank', 'noopener,noreferrer');
+    onBeforeOpen?.(article.id);
+    openArticle(article.id, article.url);
   };
 
   return (
