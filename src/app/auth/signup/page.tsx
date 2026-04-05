@@ -18,6 +18,16 @@ type Step = 'email' | 'password' | 'birth';
 const EMAIL_REGEX =
   /^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*@[A-Za-z0-9]([-_.]?[A-Za-z0-9])*\.[A-Za-z]{2,3}$/;
 
+// Matches frontend's RN app: lowercase + uppercase + digit + special char, 8–16 length
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,16}$/;
+
+const CURRENT_YEAR = new Date().getFullYear();
+const BIRTH_YEARS = Array.from(
+  { length: CURRENT_YEAR - 1900 + 1 },
+  (_, i) => CURRENT_YEAR - i,
+);
+
 export default function SignUpPage() {
   const router = useRouter();
   const { setLoggedIn } = useAuth();
@@ -42,9 +52,10 @@ export default function SignUpPage() {
   const isEmailValid = EMAIL_REGEX.test(email);
 
   // Password validation
+  const isPasswordValid = PASSWORD_REGEX.test(password);
   const passwordError =
-    password.length > 0 && password.length < 8
-      ? '비밀번호는 최소 8자 이상이어야 합니다.'
+    password.length > 0 && !isPasswordValid
+      ? '8~16자, 영문 대/소문자, 숫자, 특수문자를 모두 포함해야 합니다.'
       : '';
   const confirmError =
     confirmPassword.length > 0 && password !== confirmPassword
@@ -113,7 +124,7 @@ export default function SignUpPage() {
   };
 
   const handlePasswordNext = () => {
-    if (password.length >= 8 && password === confirmPassword) {
+    if (isPasswordValid && password === confirmPassword) {
       setStep('birth');
       setError('');
     }
@@ -136,7 +147,7 @@ export default function SignUpPage() {
 
       if (success) {
         setLoggedIn(true);
-        router.push('/interest');
+        router.push('/auth/signup/welcome');
       } else {
         setError('회원가입에 실패했습니다.');
       }
@@ -148,7 +159,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-start justify-center pt-20">
+    <main className="min-h-svh flex items-start justify-center pt-20">
       <div className="w-full max-w-md mx-auto p-6">
         <h1 className="text-2xl font-semibold text-[var(--color-text)] mb-8">
           회원가입
@@ -157,9 +168,9 @@ export default function SignUpPage() {
         <OAuthButtons />
 
         <div className="flex items-center gap-4 my-6">
-          <div className="flex-1 h-px bg-[var(--color-gray4)]" />
+          <div className="flex-1 h-px bg-[var(--color-divider)]" />
           <span className="text-sm text-[var(--color-gray3)]">또는</span>
-          <div className="flex-1 h-px bg-[var(--color-gray4)]" />
+          <div className="flex-1 h-px bg-[var(--color-divider)]" />
         </div>
 
         {/* Step indicator */}
@@ -170,7 +181,7 @@ export default function SignUpPage() {
               className={`h-1 flex-1 rounded-full ${
                 i <= ['email', 'password', 'birth'].indexOf(step)
                   ? 'bg-[var(--color-main)]'
-                  : 'bg-[var(--color-gray4)]'
+                  : 'bg-[var(--color-divider)]'
               }`}
             />
           ))}
@@ -252,10 +263,7 @@ export default function SignUpPage() {
             />
             <Button
               onClick={handlePasswordNext}
-              disabled={
-                password.length < 8 ||
-                password !== confirmPassword
-              }
+              disabled={!isPasswordValid || password !== confirmPassword}
             >
               다음
             </Button>
@@ -265,15 +273,23 @@ export default function SignUpPage() {
         {/* Step 3: Birth year */}
         {step === 'birth' && (
           <form onSubmit={handleSignUp} className="flex flex-col gap-4">
-            <Input
-              type="number"
-              label="출생연도"
-              placeholder="예: 1995"
-              value={birthYear}
-              onChange={(e) => setBirthYear(e.target.value)}
-              min={1900}
-              max={new Date().getFullYear()}
-            />
+            <div className="w-full">
+              <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
+                출생연도
+              </label>
+              <select
+                value={birthYear}
+                onChange={(e) => setBirthYear(e.target.value)}
+                className="w-full h-12 px-4 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] outline-none focus:border-[var(--color-main)]"
+              >
+                <option value="">출생연도를 선택해주세요</option>
+                {BIRTH_YEARS.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {error && (
               <p className="text-sm text-[var(--color-error)]">{error}</p>

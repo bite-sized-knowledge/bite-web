@@ -60,14 +60,14 @@ export default function OAuthButtons() {
     <div className="flex flex-col gap-3">
       <button
         onClick={handleGitHub}
-        className="w-full h-12 rounded-lg border border-[var(--color-gray4)] flex items-center justify-center gap-3 text-[var(--color-text)] hover:bg-[var(--color-gray4)] transition-colors cursor-pointer"
+        className="w-full h-12 rounded-lg border border-[var(--color-border)] flex items-center justify-center gap-3 text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer"
       >
         <GitHubIcon />
         <span className="font-medium">GitHub로 로그인</span>
       </button>
       <button
         onClick={handleGoogle}
-        className="w-full h-12 rounded-lg border border-[var(--color-gray4)] flex items-center justify-center gap-3 text-[var(--color-text)] hover:bg-[var(--color-gray4)] transition-colors cursor-pointer"
+        className="w-full h-12 rounded-lg border border-[var(--color-border)] flex items-center justify-center gap-3 text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer"
       >
         <GoogleIcon />
         <span className="font-medium">Google로 로그인</span>
