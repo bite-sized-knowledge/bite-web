@@ -125,6 +125,9 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     latest: false,
     recommend: false,
   });
+  // How many times we've asked for another page during restore. Caps
+  // the cascade so a shorter-than-saved feed doesn't loop forever.
+  const restoreFetchAttemptsRef = useRef(0);
 
   // "Anchor" = the card we consider the user to be on right now. Used to
   // compute next/prev targets and to detect & roll back over-scrolls.
@@ -366,62 +369,75 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   // --------------------------------------------------------------------------
   // Restore saved position on first articles-load for a tab.
   //
-  // Timing is tricky: we need the scroll element AND its children laid
-  // out so that `scrollTop = savedIdx * clientHeight` lands on a real
-  // card. useLayoutEffect fires before paint, but browser layout for
-  // flex ancestors can still be mid-flight. We retry via rAF until
-  // clientHeight is non-zero AND scrollHeight covers the target index.
+  // The saved index may live on a page we haven't fetched yet (e.g. the
+  // user was on card 25 but first-page returns 10). In that case we
+  // progressively trigger `getNextData()` across renders until enough
+  // pages are loaded, THEN jump to the target. A simple attempt counter
+  // prevents infinite loops if the feed is shorter than the saved index.
   // --------------------------------------------------------------------------
   useLayoutEffect(() => {
     if (totalItems === 0) return;
     if (restoredRef.current[selectedTab]) return;
 
     const saved = readResume(selectedTab);
-    let targetIdx = 0;
-    if (saved) {
-      if (saved.articleId) {
-        const idx = articles.findIndex((a) => a.id === saved.articleId);
-        if (idx >= 0) targetIdx = idx;
-        else if (typeof saved.index === 'number') {
-          targetIdx = Math.max(0, Math.min(saved.index, totalItems - 1));
-        }
-      } else if (typeof saved.index === 'number') {
-        targetIdx = Math.max(0, Math.min(saved.index, totalItems - 1));
-      }
-    }
-
-    if (targetIdx === 0) {
-      // Nothing to restore — just mark done.
+    if (!saved || (saved.index == null && !saved.articleId)) {
       restoredRef.current[selectedTab] = true;
       return;
     }
 
-    let attempts = 0;
-    const attempt = () => {
-      attempts += 1;
-      const el = scrollElRef.current;
-      if (!el) {
-        if (attempts < 30) requestAnimationFrame(attempt);
+    // Prefer articleId — survives new-article insertion at the top.
+    if (saved.articleId) {
+      const idx = articles.findIndex((a) => a.id === saved.articleId);
+      if (idx >= 0) {
+        restoredRef.current[selectedTab] = true;
+        requestAnimationFrame(() => scrollToIndex(idx, 'auto'));
         return;
       }
-      const page = el.clientHeight;
-      const neededHeight = (targetIdx + 1) * page;
-      if (page <= 0 || el.scrollHeight < neededHeight) {
-        if (attempts < 30) requestAnimationFrame(attempt);
-        return;
-      }
+    }
+
+    // Fall back to the raw saved index. If it's within the currently
+    // loaded range, restore immediately.
+    const savedIdx = typeof saved.index === 'number' ? saved.index : 0;
+    if (savedIdx <= 0) {
       restoredRef.current[selectedTab] = true;
-      scrollToIndex(targetIdx, 'auto');
-    };
-    requestAnimationFrame(attempt);
+      return;
+    }
+    if (savedIdx < totalItems) {
+      restoredRef.current[selectedTab] = true;
+      requestAnimationFrame(() => scrollToIndex(savedIdx, 'auto'));
+      return;
+    }
+
+    // Target is beyond the currently loaded range. If a fetch is
+    // already in flight, wait — the effect will re-run once new
+    // articles merge. Otherwise kick off the next page fetch.
+    if (isFetchingMore) return;
+
+    // Cap the cascade so a shorter-than-expected feed (articles
+    // deleted, etc.) doesn't loop forever. After N attempts with no
+    // progress, give up and restore to the last available position.
+    restoreFetchAttemptsRef.current += 1;
+    if (restoreFetchAttemptsRef.current > 10) {
+      restoredRef.current[selectedTab] = true;
+      requestAnimationFrame(() =>
+        scrollToIndex(Math.max(0, totalItems - 1), 'auto'),
+      );
+      return;
+    }
+    getNextData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [articles, selectedTab, totalItems]);
+  }, [articles, selectedTab, totalItems, isFetchingMore]);
 
   // --------------------------------------------------------------------------
   // Persist + impression + pagination — off the settled currentIndex
   // --------------------------------------------------------------------------
   useEffect(() => {
     if (totalItems === 0) return;
+    // Don't persist until restore has finished — otherwise the first
+    // render after reload writes `currentIndex=0` over the very saved
+    // state we're about to read, and subsequent restores find nothing
+    // to restore to.
+    if (!restoredRef.current[selectedTab]) return;
     const article = articles[currentIndex];
     if (!article) return;
     writeResume(selectedTab, { articleId: article.id, index: currentIndex });
