@@ -7,57 +7,12 @@ import {
   useBookmarkMutation,
   useShareMutation,
 } from '@/hooks/useArticleMutations';
+import { useToast } from '@/components/ui/Toast';
+import { Icon } from '@/components/ui/Icon';
 
 interface CardFooterProps {
   article: Article;
 }
-
-const HeartIcon: React.FC<{ filled: boolean }> = ({ filled }) => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill={filled ? '#FF6E1C' : 'none'}
-    stroke={filled ? '#FF6E1C' : 'currentColor'}
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </svg>
-);
-
-const ShareIcon: React.FC = () => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-    <polyline points="16 6 12 2 8 6" />
-    <line x1="12" y1="2" x2="12" y2="15" />
-  </svg>
-);
-
-const BookmarkIcon: React.FC<{ filled: boolean }> = ({ filled }) => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill={filled ? '#FF6E1C' : 'none'}
-    stroke={filled ? '#FF6E1C' : 'currentColor'}
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-  </svg>
-);
 
 export const CardFooter: React.FC<CardFooterProps> = ({ article }) => {
   const [liked, setLiked] = useState(article.isLiked);
@@ -65,6 +20,7 @@ export const CardFooter: React.FC<CardFooterProps> = ({ article }) => {
   const [bookmarked, setBookmarked] = useState(article.isArchived);
   const [shareCount, setShareCount] = useState(article.shareCount);
   const [hasShared, setHasShared] = useState(false);
+  const toast = useToast();
 
   const likeMutation = useLikeMutation(article.id, (newLiked) => {
     setLiked(newLiked);
@@ -86,17 +42,22 @@ export const CardFooter: React.FC<CardFooterProps> = ({ article }) => {
   }, [bookmarked, bookmarkMutation]);
 
   const handleShare = useCallback(async () => {
+    let copied = false;
     try {
       await navigator.clipboard.writeText(article.url);
+      copied = true;
     } catch {
-      // Fallback: do nothing if clipboard API not available
+      // Clipboard API unavailable — still record the share on the server
     }
     shareMutation.mutate();
     if (!hasShared) {
       setShareCount((prev) => prev + 1);
       setHasShared(true);
     }
-  }, [article.url, shareMutation, hasShared]);
+    if (copied) {
+      toast.show('클립보드에 주소가 복사되었습니다');
+    }
+  }, [article.url, shareMutation, hasShared, toast]);
 
   return (
     <div className="feed-card-footer flex items-center">
@@ -104,27 +65,26 @@ export const CardFooter: React.FC<CardFooterProps> = ({ article }) => {
         <button
           onClick={handleLike}
           className="flex items-center gap-2 text-[var(--color-text)]"
+          aria-label={liked ? '좋아요 취소' : '좋아요'}
         >
-          <HeartIcon filled={liked} />
-          {likeCount > 0 && (
-            <span className="text-sm">{likeCount}</span>
-          )}
+          <Icon name={liked ? 'heart_fill' : 'heart_default'} size={24} />
+          {likeCount > 0 && <span className="text-sm">{likeCount}</span>}
         </button>
         <button
           onClick={handleShare}
           className="flex items-center gap-2 text-[var(--color-text)]"
+          aria-label="공유"
         >
-          <ShareIcon />
-          {shareCount > 0 && (
-            <span className="text-sm">{shareCount}</span>
-          )}
+          <Icon name="share" size={24} />
+          {shareCount > 0 && <span className="text-sm">{shareCount}</span>}
         </button>
       </div>
       <button
         onClick={handleBookmark}
         className="text-[var(--color-text)]"
+        aria-label={bookmarked ? '쿠키에서 제거' : '쿠키에 저장'}
       >
-        <BookmarkIcon filled={bookmarked} />
+        <Icon name={bookmarked ? 'cookie_fill' : 'cookie_default'} size={24} />
       </button>
     </div>
   );
