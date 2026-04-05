@@ -22,11 +22,11 @@ export default function Button({
 
   const variants = {
     primary: isDisabled
-      ? 'bg-[var(--color-gray4)] text-[var(--color-gray3)] cursor-not-allowed'
+      ? 'bg-[var(--color-disabled-bg)] text-[var(--color-disabled-text)] cursor-not-allowed'
       : 'bg-[var(--color-main)] text-white hover:opacity-90',
     outline: isDisabled
-      ? 'border border-[var(--color-gray4)] text-[var(--color-gray3)] cursor-not-allowed'
-      : 'border border-[var(--color-gray4)] text-[var(--color-text)] hover:bg-[var(--color-gray4)]',
+      ? 'border border-[var(--color-border)] text-[var(--color-disabled-text)] cursor-not-allowed'
+      : 'border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]',
   };
 
   return (
