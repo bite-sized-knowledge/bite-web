@@ -84,20 +84,13 @@ export const login = async (email: string, password: string) => {
 };
 
 export const authenticationEmail = async (email: string) => {
-  return await api.post(
-    '/v1/auth/email/request-verify',
-    { email },
-    {},
-    false,
-  );
+  return await api.post('/v1/auth/email/request-verify', { email });
 };
 
 export const verifyEmail = async (email: string): Promise<boolean> => {
   try {
     const { data } = await api.get<boolean>(
       `/v1/auth/email/is-verified?email=${email}`,
-      {},
-      false,
     );
     return data ?? false;
   } catch {
@@ -107,11 +100,7 @@ export const verifyEmail = async (email: string): Promise<boolean> => {
 
 export const checkNameDuplication = async (name: string) => {
   try {
-    const { error } = await api.get(
-      `/v1/members/name/check?name=${name}`,
-      {},
-      false,
-    );
+    const { error } = await api.get(`/v1/members/name/check?name=${name}`);
     return error === null;
   } catch {
     return false;
@@ -126,12 +115,11 @@ interface SignUpParam {
 
 export const signUp = async ({ email, password, birth }: SignUpParam) => {
   try {
-    const { data, error } = await api.post<IToken>(
-      '/v1/members/join',
-      { email, password, birth },
-      {},
-      false,
-    );
+    const { data, error } = await api.post<IToken>('/v1/members/join', {
+      email,
+      password,
+      birth,
+    });
 
     if (!error && data) {
       localStorage.setItem('accessToken', data.token.accessToken);
