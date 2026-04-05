@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import MemberModal from '@/components/auth/MemberModal';
+import { Icon } from '@/components/ui/Icon';
+import { ArrowLeftIcon } from '@/components/icons/TabIcons';
 import { getAccessToken } from '@/lib/api/auth';
 import { decodeJwt } from 'jose';
 
@@ -38,16 +40,16 @@ export default function MyDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg)]">
+    <main className="min-h-svh bg-[var(--color-bg)]">
       {/* Header */}
       <header className="flex items-center h-[var(--header-height)] px-4 gap-3">
         <button
           type="button"
           onClick={() => router.push('/my')}
-          className="text-[var(--color-text)] text-xl cursor-pointer"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
           aria-label="뒤로 가기"
         >
-          &larr;
+          <ArrowLeftIcon size={20} />
         </button>
         <h1 className="text-xl font-bold text-[var(--color-text)]">
           내 정보
@@ -55,19 +57,19 @@ export default function MyDetailPage() {
       </header>
 
       {/* Info rows */}
-      <div className="px-4 py-5 border-b border-[var(--color-gray4)]">
+      <div className="px-4 py-5 border-b border-[var(--color-divider)]">
         <p className="text-sm text-[var(--color-gray3)] mb-1">이메일</p>
         <p className="text-base text-[var(--color-text)]">
           {userInfo?.email ?? '-'}
         </p>
       </div>
-      <div className="px-4 py-5 border-b border-[var(--color-gray4)]">
+      <div className="px-4 py-5 border-b border-[var(--color-divider)]">
         <p className="text-sm text-[var(--color-gray3)] mb-1">이름</p>
         <p className="text-base text-[var(--color-text)]">
           {userInfo?.name ?? '-'}
         </p>
       </div>
-      <div className="px-4 py-5 border-b border-[var(--color-gray4)]">
+      <div className="px-4 py-5 border-b border-[var(--color-divider)]">
         <p className="text-sm text-[var(--color-gray3)] mb-1">출생년도</p>
         <p className="text-base text-[var(--color-text)]">
           {userInfo?.birth ?? '-'}
@@ -78,23 +80,23 @@ export default function MyDetailPage() {
       <button
         type="button"
         onClick={() => router.push('/my/change-password')}
-        className="flex items-center w-full px-4 py-5 border-b border-[var(--color-gray4)] cursor-pointer text-left"
+        className="flex items-center w-full px-4 py-5 border-b border-[var(--color-divider)] cursor-pointer text-left"
       >
         <span className="flex-1 text-base text-[var(--color-text)]">
           비밀번호 변경
         </span>
-        <span className="text-[var(--color-gray3)] text-xl">&rarr;</span>
+        <Icon name="arrow_right" size={18} />
       </button>
 
       <button
         type="button"
         onClick={() => router.push('/my/withdraw')}
-        className="flex items-center w-full px-4 py-5 border-b border-[var(--color-gray4)] cursor-pointer text-left"
+        className="flex items-center w-full px-4 py-5 border-b border-[var(--color-divider)] cursor-pointer text-left"
       >
         <span className="flex-1 text-base text-[var(--color-error)]">
           회원 탈퇴
         </span>
-        <span className="text-[var(--color-gray3)] text-xl">&rarr;</span>
+        <Icon name="arrow_right" size={18} />
       </button>
     </main>
   );

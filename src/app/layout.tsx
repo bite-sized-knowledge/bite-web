@@ -49,7 +49,7 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
         />
       </head>
-      <body className="min-h-screen">
+      <body className="min-h-svh">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

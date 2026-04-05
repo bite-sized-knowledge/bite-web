@@ -43,7 +43,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-start justify-center pt-20">
+    <main className="min-h-svh flex items-start justify-center pt-20">
       <div className="w-full max-w-md mx-auto p-6">
         <h1 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
           로그인
@@ -56,9 +56,9 @@ export default function LoginPage() {
 
         {/* Divider */}
         <div className="flex items-center gap-4 my-6">
-          <div className="flex-1 h-px bg-[var(--color-gray4)]" />
+          <div className="flex-1 h-px bg-[var(--color-divider)]" />
           <span className="text-sm text-[var(--color-gray3)]">또는</span>
-          <div className="flex-1 h-px bg-[var(--color-gray4)]" />
+          <div className="flex-1 h-px bg-[var(--color-divider)]" />
         </div>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">

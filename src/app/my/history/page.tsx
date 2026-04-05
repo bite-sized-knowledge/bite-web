@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import { useHistory } from '@/hooks/useHistory';
 import ArticleGrid from '@/components/grid/ArticleGrid';
 import MemberModal from '@/components/auth/MemberModal';
+import { ArrowLeftIcon } from '@/components/icons/TabIcons';
 import { Article } from '@/types/Article';
 
 export default function HistoryPage() {
@@ -19,7 +20,19 @@ export default function HistoryPage() {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    refetch,
   } = useHistory();
+
+  // Refetch when the tab regains focus so we pick up newly-viewed articles.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refetch();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refetch]);
 
   const articles: Article[] = useMemo(
     () => data?.pages.flatMap((page) => page?.articles ?? []) ?? [],
@@ -39,16 +52,16 @@ export default function HistoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg)]">
+    <main className="min-h-svh bg-[var(--color-bg)]">
       {/* Header */}
       <header className="flex items-center h-[var(--header-height)] px-4 gap-3">
         <button
           type="button"
           onClick={() => router.push('/my')}
-          className="text-[var(--color-text)] text-xl cursor-pointer"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
           aria-label="뒤로 가기"
         >
-          &larr;
+          <ArrowLeftIcon size={20} />
         </button>
         <h1 className="text-xl font-bold text-[var(--color-text)]">
           최근 본 글

@@ -17,10 +17,18 @@ const variants = {
 export default function FeedPage() {
   const [selectedTab, setSelectedTab] = useState<TabType>('latest');
   const [direction, setDirection] = useState(0);
-  const { articles, isLoading, isFetchingMore, isError, error, getNextData } =
-    useFeedData(selectedTab);
+  const {
+    articles,
+    isLoading,
+    isFetchingMore,
+    isError,
+    error,
+    getNextData,
+    removeArticle,
+  } = useFeedData(selectedTab);
 
   const handleTabChange = (tab: TabType) => {
+    if (tab === selectedTab) return;
     setDirection(tab === 'recommend' ? 1 : -1);
     setSelectedTab(tab);
   };
@@ -55,6 +63,7 @@ export default function FeedPage() {
             isFetchingMore={isFetchingMore}
             getNextData={getNextData}
             selectedTab={selectedTab}
+            onUninterest={removeArticle}
           />
         </motion.div>
       </AnimatePresence>

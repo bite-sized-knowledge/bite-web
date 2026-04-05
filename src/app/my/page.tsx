@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import { useTheme } from '@/lib/theme/provider';
 import MemberModal from '@/components/auth/MemberModal';
 import Switch from '@/components/ui/Switch';
+import { Icon } from '@/components/ui/Icon';
 import { getAccessToken } from '@/lib/api/auth';
 import { decodeJwt } from 'jose';
 
@@ -35,7 +37,7 @@ export default function MyPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg)]">
+    <main className="min-h-svh bg-[var(--color-bg)]">
       {/* Header */}
       <header className="flex items-center h-[var(--header-height)] px-4">
         <h1 className="text-xl font-bold text-[var(--color-text)]">MY</h1>
@@ -45,37 +47,50 @@ export default function MyPage() {
       <button
         type="button"
         onClick={() => router.push('/my/detail')}
-        className="flex items-center gap-2 w-full px-4 py-5 border-b border-[var(--color-gray4)] cursor-pointer text-left"
+        className="flex items-center gap-3 w-full px-4 py-5 border-b border-[var(--color-divider)] cursor-pointer text-left"
       >
-        <div className="w-12 h-12 rounded-full bg-[var(--color-gray4)] shrink-0" />
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[var(--color-gray4)]">
+          <Image
+            src="/images/profileImage.png"
+            alt=""
+            fill
+            sizes="48px"
+            className="object-cover"
+            aria-hidden
+          />
+        </div>
         <span className="flex-1 text-lg font-bold text-[var(--color-text)]">
           {userName}
         </span>
-        <span className="text-[var(--color-gray3)] text-xl">&rarr;</span>
+        <Icon name="arrow_right" size={18} />
       </button>
 
       {/* History section */}
       <button
         type="button"
         onClick={() => router.push('/my/history')}
-        className="flex items-center w-full px-4 py-5 border-b border-[var(--color-gray4)] cursor-pointer text-left"
+        className="flex items-center w-full px-4 py-5 border-b border-[var(--color-divider)] cursor-pointer text-left"
       >
         <span className="flex-1 text-lg font-bold text-[var(--color-text)]">
           최근 본 글
         </span>
-        <span className="text-[var(--color-gray3)] text-xl">&rarr;</span>
+        <Icon name="arrow_right" size={18} />
       </button>
 
       {/* Theme toggle section */}
-      <div className="flex items-center justify-between px-4 py-5 border-b border-[var(--color-gray4)]">
+      <div className="flex items-center justify-between px-4 py-5 border-b border-[var(--color-divider)]">
         <span className="text-lg font-bold text-[var(--color-text)]">
           테마 전환
         </span>
         <Switch
           checked={themeMode === 'light'}
           onChange={toggleTheme}
-          activeLabel="Sun"
-          inactiveLabel="Moon"
+          activeIcon={
+            <Icon name="sun" size={14} />
+          }
+          inactiveIcon={
+            <Icon name="moon" size={14} />
+          }
         />
       </div>
 
@@ -84,7 +99,7 @@ export default function MyPage() {
         <button
           type="button"
           onClick={logout}
-          className="w-full h-12 rounded-lg border border-[var(--color-gray4)] text-[var(--color-text)] font-semibold cursor-pointer hover:bg-[var(--color-gray4)] transition-colors"
+          className="w-full h-12 rounded-lg border border-[var(--color-border)] text-[var(--color-text)] font-semibold cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors"
         >
           로그아웃
         </button>

@@ -63,3 +63,16 @@ export function useShareMutation(articleId: string) {
     },
   });
 }
+
+export function useUninterestMutation(
+  articleId: string,
+  onSuccess?: () => void,
+) {
+  return useMutation({
+    mutationFn: () => articleApi.unInterest(articleId),
+    onSuccess: () => {
+      sendEvent(TARGET_TYPE.ARTICLE, articleId, EVENT_TYPE.UNINTEREST);
+      onSuccess?.();
+    },
+  });
+}
