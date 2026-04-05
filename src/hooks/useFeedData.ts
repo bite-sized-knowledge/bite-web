@@ -21,7 +21,8 @@ function mergeWithoutDuplicates(prev: Article[], next: Article[]): Article[] {
 
 type ArticleAction =
   | { type: 'merge'; articles: Article[] }
-  | { type: 'reset' };
+  | { type: 'reset' }
+  | { type: 'remove'; articleId: string };
 
 function articleReducer(state: Article[], action: ArticleAction): Article[] {
   switch (action.type) {
@@ -29,6 +30,8 @@ function articleReducer(state: Article[], action: ArticleAction): Article[] {
       return mergeWithoutDuplicates(state, action.articles);
     case 'reset':
       return [];
+    case 'remove':
+      return state.filter((a) => a.id !== action.articleId);
   }
 }
 
@@ -126,6 +129,13 @@ export function useFeedData(selectedTab: TabType) {
   const isError = isRecommendedError || isRecentError;
   const error = recommendedError || recentError;
 
+  // Remove an article from both tabs so "not interested" and similar
+  // actions stick regardless of which tab the user is looking at.
+  const removeArticle = useCallback((articleId: string) => {
+    dispatchRecent({ type: 'remove', articleId });
+    dispatchRecommended({ type: 'remove', articleId });
+  }, []);
+
   return {
     articles,
     isLoading,
@@ -134,5 +144,6 @@ export function useFeedData(selectedTab: TabType) {
     error,
     getNextData,
     refetch: selectedTab === 'latest' ? refetchRecent : refetchRecommended,
+    removeArticle,
   };
 }

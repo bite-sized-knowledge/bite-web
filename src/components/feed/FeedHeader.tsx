@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useFeedScroll } from '@/hooks/useFeedScroll';
+import { SearchIcon } from '@/components/icons/TabIcons';
 
 type TabType = 'latest' | 'recommend';
 
@@ -13,6 +16,16 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   selectedTab,
   onTabChange,
 }) => {
+  const { scrollToTop } = useFeedScroll();
+
+  const handleClick = (tab: TabType) => {
+    if (tab === selectedTab) {
+      scrollToTop(tab);
+      return;
+    }
+    onTabChange(tab);
+  };
+
   const latestRef = useRef<HTMLButtonElement>(null);
   const recommendRef = useRef<HTMLButtonElement>(null);
   const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
@@ -33,7 +46,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
             ? 'text-[var(--color-text)]'
             : 'text-[var(--color-gray3)]'
         }`}
-        onClick={() => onTabChange('latest')}
+        onClick={() => handleClick('latest')}
       >
         최신
       </button>
@@ -44,7 +57,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
             ? 'text-[var(--color-text)]'
             : 'text-[var(--color-gray3)]'
         }`}
-        onClick={() => onTabChange('recommend')}
+        onClick={() => handleClick('recommend')}
       >
         추천
       </button>
@@ -54,6 +67,13 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
           style={{ left: indicator.left, width: indicator.width }}
         />
       )}
+      <Link
+        href="/search"
+        aria-label="검색"
+        className="feed-header-search absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
+      >
+        <SearchIcon size={20} />
+      </Link>
     </div>
   );
 };

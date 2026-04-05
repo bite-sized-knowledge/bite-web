@@ -7,14 +7,15 @@ import { Blog } from '@/types/Blog';
 
 interface CardHeaderProps {
   blog: Blog;
+  trailing?: React.ReactNode;
 }
 
-export const CardHeader: React.FC<CardHeaderProps> = ({ blog }) => {
+export const CardHeader: React.FC<CardHeaderProps> = ({ blog, trailing }) => {
   return (
-    <div className="feed-card-header flex items-center">
+    <div className="feed-card-header flex items-center gap-2">
       <Link
         href={`/blog/${blog.id}`}
-        className="flex flex-1 items-center gap-2"
+        className="flex flex-1 items-center gap-2 min-w-0"
       >
         <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full bg-[#d9d9d9]">
           {blog.favicon && (
@@ -35,6 +36,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ blog }) => {
           {blog.title}
         </span>
       </Link>
+      {trailing && <div className="shrink-0">{trailing}</div>}
     </div>
   );
 };
