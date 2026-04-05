@@ -72,17 +72,24 @@ export function useFeedData(selectedTab: TabType) {
   // Derive isFetchingMore from request state and fetching state
   const isFetchingMore = fetchMoreRequested && (isRecommendedFetching || isRecentFetching);
 
-  // Update recommended articles when data arrives
+  // Update recommended articles when data arrives.
   useEffect(() => {
     if (recommendedFeed?.data && !isRecommendedFetching) {
       dispatchRecommended({ type: 'merge', articles: recommendedFeed.data ?? [] });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFetchMoreRequested(false);
     }
   }, [recommendedFeed, isRecommendedFetching]);
 
-  // Update recent articles when data arrives
+  // Update recent articles when data arrives. Reset fetchMoreRequested
+  // once the response lands so a subsequent getNextData() call is free
+  // to fire — otherwise the flag stays stuck true and the next page
+  // request short-circuits.
   useEffect(() => {
     if (recentFeedData && !isRecentFetching) {
       dispatchRecent({ type: 'merge', articles: recentFeedData.articles ?? [] });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFetchMoreRequested(false);
     }
   }, [recentFeedData, isRecentFetching]);
 
@@ -109,13 +116,17 @@ export function useFeedData(selectedTab: TabType) {
 
   const getNextData = useCallback(() => {
     if (isFetchingMore) return;
-    setFetchMoreRequested(true);
 
     if (selectedTab === 'latest') {
-      if (recentFeedData?.next) {
-        setFrom(recentFeedData.next);
-      }
+      // Backend returns `next: ""` (omitted from JSON) when there are
+      // no more pages. Treat both undefined and empty string as "end of
+      // feed" and skip the fetch entirely so we don't thrash the state.
+      const next = recentFeedData?.next;
+      if (!next) return;
+      setFetchMoreRequested(true);
+      setFrom(next);
     } else {
+      setFetchMoreRequested(true);
       refetchRecommended();
     }
   }, [selectedTab, recentFeedData, isFetchingMore, refetchRecommended]);
