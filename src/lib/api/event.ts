@@ -1,4 +1,5 @@
 import { getAccessToken } from './auth';
+import { getApiBaseUrl } from './baseUrl';
 
 export const TARGET_TYPE = {
   BLOG: 'BLOG',
@@ -83,7 +84,7 @@ export const sendEvent = (
   }
   if (extras.source) body.source = extras.source;
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? '';
+  const baseUrl = getApiBaseUrl();
 
   // Raw fetch so we bypass the ApiClient's retry-on-401 + refresh flow.
   // Analytics should never trigger a token refresh dance.

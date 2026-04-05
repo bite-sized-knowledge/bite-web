@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { getApiBaseUrl } from '@/lib/api/baseUrl';
 
 interface UserInfo {
   accessToken: string;
@@ -30,7 +31,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async () => {
     // Clear httpOnly refresh token cookie via server
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/logout`, {
+      await fetch(`${getApiBaseUrl()}/v1/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
