@@ -1,5 +1,5 @@
 import { api } from './client';
-import { IToken, setAccessToken, setRefreshToken } from './auth';
+import { IToken, setAccessToken } from './auth';
 
 interface Interest {
   id: number;
@@ -23,8 +23,8 @@ export const getGuestAccount = async (interestIds: number[]) => {
 
     if (!data) return false;
 
+    // Refresh token is delivered via httpOnly cookie by the server.
     setAccessToken(data.token.accessToken);
-    setRefreshToken(data.token.refreshToken);
 
     return true;
   } catch {

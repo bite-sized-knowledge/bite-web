@@ -1,23 +1,16 @@
 import { api } from './client';
 
-// accessToken을 localStorage에서 가져오는 함수
+// The refresh token lives in an httpOnly cookie set by the backend on
+// login/guest-creation and is never touched from JS. Only the access
+// token is kept in localStorage for attaching to outbound requests.
+
 export const getAccessToken = (): string | null => {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('accessToken');
 };
 
-// refreshToken is now stored in httpOnly cookie (not accessible from JS)
-export const getRefreshToken = (): string | null => {
-  return null; // refresh token is in httpOnly cookie
-};
-
 export const setAccessToken = (accessToken: string) => {
   localStorage.setItem('accessToken', accessToken);
-};
-
-export const setRefreshToken = (_refreshToken: string) => {
-  // refresh token is now set as httpOnly cookie by the server
-  // no-op on client side
 };
 
 // refreshToken을 이용하여 새로운 accessToken을 발급받는 함수
@@ -178,22 +171,6 @@ export const resetPassword = async (email: string) => {
 
     if (error) return false;
     return status;
-  } catch {
-    return false;
-  }
-};
-
-export const passwordMatch = async (email: string, password: string) => {
-  try {
-    const { data, error } = await api.post<IToken>(
-      '/v1/auth/login',
-      { email, password },
-      {},
-      false,
-    );
-
-    if (!error && data) return true;
-    return false;
   } catch {
     return false;
   }
