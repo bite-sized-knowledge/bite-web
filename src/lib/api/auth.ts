@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from './baseUrl';
 import { api } from './client';
 
 // The refresh token lives in an httpOnly cookie set by the backend on
@@ -18,7 +19,7 @@ export const setAccessToken = (accessToken: string) => {
 export const refreshAccessToken = async (): Promise<string | null> => {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/refresh`,
+      `${getApiBaseUrl()}/v1/auth/refresh`,
       {
         method: 'POST',
         headers: {

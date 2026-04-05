@@ -1,5 +1,6 @@
 import { ApiErrorResult, ApiResponse } from '@/types/api';
 import { getAccessToken, refreshAccessToken } from './auth';
+import { getApiBaseUrl } from './baseUrl';
 
 const DEFAULT_TIMEOUT = 30000;
 
@@ -20,11 +21,19 @@ export class ApiClient {
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
 
-  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL ?? '') {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl?: string) {
+    this.baseUrl = baseUrl ?? getApiBaseUrl();
     this.defaultHeaders = {
       'Content-Type': 'application/json',
     };
+  }
+
+  private get resolvedBaseUrl(): string {
+    // Re-resolve lazily — the singleton is constructed during SSR when
+    // window isn't available, so an empty construction-time result
+    // gets replaced by the hostname-derived URL once we're in the
+    // browser.
+    return this.baseUrl || getApiBaseUrl();
   }
 
   private async fetchWithTimeout(
@@ -55,7 +64,7 @@ export class ApiClient {
     hasRetried: boolean = false,
   ): Promise<{ data: T | null; error: Error | null; status: boolean }> {
     try {
-      const url = `${this.baseUrl}${endpoint}`;
+      const url = `${this.resolvedBaseUrl}${endpoint}`;
 
       let accessToken: string | null = null;
       if (authRequired) {

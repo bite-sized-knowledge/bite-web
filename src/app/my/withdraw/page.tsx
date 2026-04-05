@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Checkbox from '@/components/ui/Checkbox';
 import { ArrowLeftIcon } from '@/components/icons/TabIcons';
 import { withDraw, getAccessToken } from '@/lib/api/auth';
+import { getApiBaseUrl } from '@/lib/api/baseUrl';
 import { decodeJwt } from 'jose';
 
 const CONFIRMATIONS: string[] = [
@@ -52,7 +53,7 @@ export default function WithdrawPage() {
       if (result) {
         // Clear httpOnly refresh token cookie
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/logout`, {
+          await fetch(`${getApiBaseUrl()}/v1/auth/logout`, {
             method: 'POST',
             credentials: 'include',
           });
