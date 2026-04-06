@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import MemberModal from '@/components/auth/MemberModal';
 import { Icon } from '@/components/ui/Icon';
-import { ArrowLeftIcon } from '@/components/icons/TabIcons';
+import BackButton from '@/components/layout/BackButton';
 import { getAccessToken } from '@/lib/api/auth';
 import { decodeJwt } from 'jose';
 
@@ -43,14 +43,7 @@ export default function MyDetailPage() {
     <main className="min-h-svh bg-[var(--color-bg)]">
       {/* Header */}
       <header className="flex items-center h-[var(--header-height)] px-4 gap-3">
-        <button
-          type="button"
-          onClick={() => router.push('/my')}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
-          aria-label="뒤로 가기"
-        >
-          <ArrowLeftIcon size={20} />
-        </button>
+        <BackButton href="/my" />
         <h1 className="text-xl font-bold text-[var(--color-text)]">
           내 정보
         </h1>

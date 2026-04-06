@@ -14,9 +14,7 @@ import {
   passwordMatch,
 } from '@/lib/api/auth';
 
-// Matches frontend RN app: lowercase + uppercase + digit + special, 8–16
-const PASSWORD_REGEX =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,16}$/;
+import { PASSWORD_REGEX, PASSWORD_HINT } from '@/lib/validation';
 
 type Step = 'verify' | 'new';
 
@@ -149,7 +147,7 @@ export default function ChangePasswordPage() {
               onChange={(e) => setNewPassword(e.target.value)}
               error={
                 newPassword.length > 0 && !isNewPasswordValid
-                  ? '8~16자, 영문 대/소문자, 숫자, 특수문자를 모두 포함해야 합니다.'
+                  ? PASSWORD_HINT
                   : ''
               }
             />
