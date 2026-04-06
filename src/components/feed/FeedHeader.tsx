@@ -3,7 +3,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useFeedScroll } from '@/hooks/useFeedScroll';
+import { useTheme } from '@/lib/theme/provider';
 import { SearchIcon } from '@/components/icons/TabIcons';
+import { Icon } from '@/components/ui/Icon';
 
 type TabType = 'latest' | 'recommend';
 
@@ -17,6 +19,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   onTabChange,
 }) => {
   const { scrollToTop } = useFeedScroll();
+  const { themeMode, toggleTheme } = useTheme();
 
   const handleClick = (tab: TabType) => {
     if (tab === selectedTab) {
@@ -26,9 +29,12 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
     onTabChange(tab);
   };
 
+  const [mounted, setMounted] = useState(false);
   const latestRef = useRef<HTMLButtonElement>(null);
   const recommendRef = useRef<HTMLButtonElement>(null);
   const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const el = selectedTab === 'latest' ? latestRef.current : recommendRef.current;
@@ -67,13 +73,24 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
           style={{ left: indicator.left, width: indicator.width }}
         />
       )}
-      <Link
-        href="/search"
-        aria-label="검색"
-        className="feed-header-search absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
-      >
-        <SearchIcon size={20} />
-      </Link>
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={mounted && themeMode === 'dark' ? '라이트모드로 전환' : '다크모드로 전환'}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] transition-colors"
+          suppressHydrationWarning
+        >
+          <Icon name={mounted ? (themeMode === 'light' ? 'moon' : 'sun') : 'moon'} size={20} />
+        </button>
+        <Link
+          href="/search"
+          aria-label="검색"
+          className="feed-header-search flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
+        >
+          <SearchIcon size={20} />
+        </Link>
+      </div>
     </div>
   );
 };
