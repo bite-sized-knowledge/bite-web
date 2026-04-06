@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FeedHeader } from '@/components/feed/FeedHeader';
 import { FeedContainer } from '@/components/feed/FeedContainer';
 import { useFeedData } from '@/hooks/useFeedData';
+import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay';
 
 type TabType = 'latest' | 'recommend';
 
@@ -45,6 +46,7 @@ export default function FeedPage() {
 
   return (
     <main className="feed-main">
+      <OnboardingOverlay />
       <FeedHeader selectedTab={selectedTab} onTabChange={handleTabChange} />
       <AnimatePresence mode="wait" custom={direction} initial={false}>
         <motion.div

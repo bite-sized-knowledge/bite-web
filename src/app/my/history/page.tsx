@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth/provider';
 import { useHistory } from '@/hooks/useHistory';
 import ArticleGrid from '@/components/grid/ArticleGrid';
 import MemberModal from '@/components/auth/MemberModal';
-import { ArrowLeftIcon } from '@/components/icons/TabIcons';
+import BackButton from '@/components/layout/BackButton';
 import { Article } from '@/types/Article';
 
 export default function HistoryPage() {
@@ -55,14 +55,7 @@ export default function HistoryPage() {
     <main className="min-h-svh bg-[var(--color-bg)]">
       {/* Header */}
       <header className="flex items-center h-[var(--header-height)] px-4 gap-3">
-        <button
-          type="button"
-          onClick={() => router.push('/my')}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
-          aria-label="뒤로 가기"
-        >
-          <ArrowLeftIcon size={20} />
-        </button>
+        <BackButton href="/my" />
         <h1 className="text-xl font-bold text-[var(--color-text)]">
           최근 본 글
         </h1>

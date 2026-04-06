@@ -13,14 +13,10 @@ import OAuthButtons from '@/components/auth/OAuthButtons';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
-type Step = 'email' | 'password' | 'birth';
+const STEPS = ['email', 'password', 'birth'] as const;
+type Step = (typeof STEPS)[number];
 
-const EMAIL_REGEX =
-  /^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*@[A-Za-z0-9]([-_.]?[A-Za-z0-9])*\.[A-Za-z]{2,3}$/;
-
-// Matches frontend's RN app: lowercase + uppercase + digit + special char, 8–16 length
-const PASSWORD_REGEX =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,16}$/;
+import { EMAIL_REGEX, PASSWORD_REGEX, PASSWORD_HINT } from '@/lib/validation';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const BIRTH_YEARS = Array.from(
@@ -55,7 +51,7 @@ export default function SignUpPage() {
   const isPasswordValid = PASSWORD_REGEX.test(password);
   const passwordError =
     password.length > 0 && !isPasswordValid
-      ? '8~16자, 영문 대/소문자, 숫자, 특수문자를 모두 포함해야 합니다.'
+      ? PASSWORD_HINT
       : '';
   const confirmError =
     confirmPassword.length > 0 && password !== confirmPassword
@@ -175,11 +171,11 @@ export default function SignUpPage() {
 
         {/* Step indicator */}
         <div className="flex items-center gap-2 mb-6">
-          {(['email', 'password', 'birth'] as Step[]).map((s, i) => (
+          {STEPS.map((s, i) => (
             <div
               key={s}
               className={`h-1 flex-1 rounded-full ${
-                i <= ['email', 'password', 'birth'].indexOf(step)
+                i <= STEPS.indexOf(step)
                   ? 'bg-[var(--color-main)]'
                   : 'bg-[var(--color-divider)]'
               }`}
