@@ -293,30 +293,46 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   // --------------------------------------------------------------------------
   // Touch handlers — one swipe == one advance, direction from delta sign
   // --------------------------------------------------------------------------
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStartYRef.current = e.touches[0].clientY;
-    touchStartTimeRef.current = Date.now();
-  };
+  // Register touch handlers via useEffect with { passive: false }
+  // so preventDefault() works in onTouchMove.
+  useEffect(() => {
+    const el = scrollElRef.current;
+    if (!el) return;
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    // Block native scroll during the gesture — we commit on touchend.
-    if (touchStartYRef.current != null) e.preventDefault();
-  };
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartYRef.current = e.touches[0].clientY;
+      touchStartTimeRef.current = Date.now();
+    };
 
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartYRef.current == null) return;
-    const endY = e.changedTouches[0].clientY;
-    const dy = endY - touchStartYRef.current;
-    const dt = Date.now() - touchStartTimeRef.current;
-    touchStartYRef.current = null;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (touchStartYRef.current != null) e.preventDefault();
+    };
 
-    const isQuick = dt < TOUCH_QUICK_MS && Math.abs(dy) > TOUCH_QUICK_PX;
-    if (dy < -TOUCH_SWIPE_PX || (isQuick && dy < 0)) {
-      scrollToIndex(anchorIdxRef.current + 1, 'smooth');
-    } else if (dy > TOUCH_SWIPE_PX || (isQuick && dy > 0)) {
-      scrollToIndex(anchorIdxRef.current - 1, 'smooth');
-    }
-  };
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (touchStartYRef.current == null) return;
+      const endY = e.changedTouches[0].clientY;
+      const dy = endY - touchStartYRef.current;
+      const dt = Date.now() - touchStartTimeRef.current;
+      touchStartYRef.current = null;
+
+      const isQuick = dt < TOUCH_QUICK_MS && Math.abs(dy) > TOUCH_QUICK_PX;
+      if (dy < -TOUCH_SWIPE_PX || (isQuick && dy < 0)) {
+        scrollToIndex(anchorIdxRef.current + 1, 'smooth');
+      } else if (dy > TOUCH_SWIPE_PX || (isQuick && dy > 0)) {
+        scrollToIndex(anchorIdxRef.current - 1, 'smooth');
+      }
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [scrollToIndex]);
 
   // --------------------------------------------------------------------------
   // Keyboard shortcuts
@@ -473,9 +489,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     <div
       className="feed-scroll-area"
       ref={scrollElRef}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
     >
       {showingSkeletons
         ? [0, 1, 2].map((i) => (

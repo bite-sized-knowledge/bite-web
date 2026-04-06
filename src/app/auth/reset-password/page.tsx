@@ -6,8 +6,7 @@ import { resetPassword } from '@/lib/api/auth';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
-const EMAIL_REGEX =
-  /^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*@[A-Za-z0-9]([-_.]?[A-Za-z0-9])*\.[A-Za-z]{2,3}$/;
+import { EMAIL_REGEX } from '@/lib/validation';
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');
