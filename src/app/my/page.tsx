@@ -4,9 +4,7 @@ import { useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
-import { useTheme } from '@/lib/theme/provider';
 import MemberModal from '@/components/auth/MemberModal';
-import Switch from '@/components/ui/Switch';
 import { Icon } from '@/components/ui/Icon';
 import { getAccessToken } from '@/lib/api/auth';
 import { decodeJwt } from 'jose';
@@ -14,7 +12,6 @@ import { decodeJwt } from 'jose';
 export default function MyPage() {
   const router = useRouter();
   const { isLoggedIn, logout } = useAuth();
-  const { themeMode, toggleTheme } = useTheme();
   const showModal = !isLoggedIn;
   const userName = useMemo(() => {
     if (!isLoggedIn) return '';
@@ -76,23 +73,6 @@ export default function MyPage() {
         </span>
         <Icon name="arrow_right" size={18} />
       </button>
-
-      {/* Theme toggle section */}
-      <div className="flex items-center justify-between px-4 py-5 border-b border-[var(--color-divider)]">
-        <span className="text-lg font-bold text-[var(--color-text)]">
-          테마 전환
-        </span>
-        <Switch
-          checked={themeMode === 'light'}
-          onChange={toggleTheme}
-          activeIcon={
-            <Icon name="sun" size={14} />
-          }
-          inactiveIcon={
-            <Icon name="moon" size={14} />
-          }
-        />
-      </div>
 
       {/* Logout */}
       <div className="px-4 py-5">
