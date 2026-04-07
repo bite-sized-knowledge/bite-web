@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useFeedScroll } from '@/hooks/useFeedScroll';
 import { useTheme } from '@/lib/theme/provider';
@@ -29,12 +29,10 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
     onTabChange(tab);
   };
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const latestRef = useRef<HTMLButtonElement>(null);
   const recommendRef = useRef<HTMLButtonElement>(null);
   const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const el = selectedTab === 'latest' ? latestRef.current : recommendRef.current;

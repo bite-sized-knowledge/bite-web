@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { OnboardingSlide } from './OnboardingSlide';
@@ -177,22 +177,16 @@ function writeOnboardingState() {
 }
 
 export function OnboardingOverlay() {
-  const [shouldShow, setShouldShow] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const shouldShowInitial = useSyncExternalStore(
+    () => () => {},
+    () => process.env.NODE_ENV === 'development' || !readOnboardingState()?.completed,
+    () => false,
+  );
+  const [shouldShow, setShouldShow] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
-
-  useEffect(() => {
-    setMounted(true);
-    if (process.env.NODE_ENV === 'development') {
-      setShouldShow(true);
-    } else {
-      const state = readOnboardingState();
-      if (!state?.completed) {
-        setShouldShow(true);
-      }
-    }
-  }, []);
+  const visible = mounted && shouldShowInitial && shouldShow;
 
   const dismiss = () => {
     if (process.env.NODE_ENV !== 'development') {
@@ -236,7 +230,7 @@ export function OnboardingOverlay() {
     }
   };
 
-  if (!mounted || !shouldShow) return null;
+  if (!visible) return null;
 
   const isLastSlide = currentSlide === SLIDES.length - 1;
   const slide = SLIDES[currentSlide];
