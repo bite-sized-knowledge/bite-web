@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from './baseUrl';
 import { api } from './client';
+import { getDeviceId } from '@/lib/device';
 
 // The refresh token lives in an httpOnly cookie set by the backend on
 // login/guest-creation and is never touched from JS. Only the access
@@ -55,6 +56,16 @@ export interface IToken {
  * @param email 이메일
  * @param password 비밀번호
  */
+/**
+ * Merge anonymous events collected before login with the now-authenticated member.
+ * Fire-and-forget — failure should not block the auth flow.
+ */
+const mergeAnonymousEvents = () => {
+  const deviceId = getDeviceId();
+  if (!deviceId) return;
+  api.post('/v1/events/merge', { deviceId }).catch(() => {});
+};
+
 export const login = async (email: string, password: string) => {
   try {
     const { data, error } = await api.post<IToken>(
@@ -66,7 +77,7 @@ export const login = async (email: string, password: string) => {
 
     if (!error && data) {
       localStorage.setItem('accessToken', data.token.accessToken);
-      // refresh token is set as httpOnly cookie by the server
+      mergeAnonymousEvents();
       return true;
     }
 
@@ -203,7 +214,7 @@ export const oauthGithub = async (code: string) => {
 
     if (!error && data) {
       localStorage.setItem('accessToken', data.token.accessToken);
-      // refresh token is set as httpOnly cookie by the server
+      mergeAnonymousEvents();
       return true;
     }
 
@@ -224,7 +235,7 @@ export const oauthGoogle = async (code: string) => {
 
     if (!error && data) {
       localStorage.setItem('accessToken', data.token.accessToken);
-      // refresh token is set as httpOnly cookie by the server
+      mergeAnonymousEvents();
       return true;
     }
 

@@ -356,6 +356,16 @@ body {
 }
 
 /* =============================================
+   Search highlight
+   ============================================= */
+.search-highlight {
+  background-color: color-mix(in srgb, var(--color-main) 20%, transparent);
+  color: var(--color-main);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* =============================================
    Skeleton shimmer animation
    ============================================= */
 @keyframes shimmer {

@@ -68,11 +68,19 @@ export const getHistory = async (
   return data;
 };
 
-export const searchArticles = async (query: string, signal?: AbortSignal) => {
-  const { data } = await api.get<{ articles: Article[] }>(
-    `/v1/articles/search?query=${encodeURIComponent(query)}`,
+export const searchArticles = async (
+  query: string,
+  signal?: AbortSignal,
+  from?: string,
+) => {
+  let url = `/v1/articles/search?query=${encodeURIComponent(query)}&limit=${ROWS_PER_PAGE}`;
+  if (from) {
+    url += `&from=${from}`;
+  }
+  const { data } = await api.get<{ articles: Article[]; next?: string }>(
+    url,
     { signal },
     false,
   );
-  return data?.articles ?? [];
+  return { articles: data?.articles ?? [], next: data?.next ?? null };
 };

@@ -1,5 +1,6 @@
 import { api } from './client';
 import { IToken, setAccessToken } from './auth';
+import { getDeviceId } from '@/lib/device';
 
 interface Interest {
   id: number;
@@ -25,6 +26,12 @@ export const getGuestAccount = async (interestIds: number[]) => {
 
     // Refresh token is delivered via httpOnly cookie by the server.
     setAccessToken(data.token.accessToken);
+
+    // Merge anonymous events to the new guest account
+    const deviceId = getDeviceId();
+    if (deviceId) {
+      api.post('/v1/events/merge', { deviceId }).catch(() => {});
+    }
 
     return true;
   } catch {

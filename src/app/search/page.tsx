@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Article } from '@/types/Article';
 import { searchArticles } from '@/lib/api/article';
-import ArticleGrid from '@/components/grid/ArticleGrid';
+import { SearchResultList } from '@/components/search/SearchResultList';
+import { ArticlePreviewSheet } from '@/components/search/ArticlePreviewSheet';
 import { useRecentSearches } from '@/hooks/useRecentSearches';
 import { Icon } from '@/components/ui/Icon';
 import { ArrowLeftIcon } from '@/components/icons/TabIcons';
@@ -24,17 +25,24 @@ export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [articles, setArticles] = useState<Article[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState(0);
   const { recent, add: addRecent, remove: removeRecent, clear: clearRecent } =
     useRecentSearches();
 
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const queryRef = useRef(query);
+  queryRef.current = query;
 
   const runSearch = useCallback(
     async (q: string) => {
       if (!q.trim()) {
         setStatus('idle');
         setArticles([]);
+        setNextCursor(null);
         return;
       }
 
@@ -44,9 +52,13 @@ export default function SearchPage() {
 
       setStatus('loading');
       try {
-        const results = await searchArticles(q, controller.signal);
+        const { articles: results, next } = await searchArticles(
+          q,
+          controller.signal,
+        );
         if (controller.signal.aborted) return;
         setArticles(results);
+        setNextCursor(next);
         setStatus(results.length === 0 ? 'empty' : 'results');
         addRecent(q);
       } catch {
@@ -57,23 +69,37 @@ export default function SearchPage() {
     [addRecent],
   );
 
-  // Debounced search as user types. When the query is empty we just skip
-  // scheduling a search — the idle/results state is reset by handleChange
-  // or handleClear so we never need setState inside this effect.
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const controller = new AbortController();
+      const { articles: more, next } = await searchArticles(
+        queryRef.current,
+        controller.signal,
+        nextCursor,
+      );
+      setArticles((prev) => [...prev, ...more]);
+      setNextCursor(next);
+    } catch {
+      // silently ignore — user can scroll again to retry
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [nextCursor, loadingMore]);
+
   useEffect(() => {
     if (!query.trim()) return;
     const t = setTimeout(() => runSearch(query), DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [query, runSearch]);
 
-  // Cancel in-flight on unmount
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
     };
   }, []);
 
-  // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -87,6 +113,7 @@ export default function SearchPage() {
     setQuery('');
     setStatus('idle');
     setArticles([]);
+    setNextCursor(null);
     inputRef.current?.focus();
   };
 
@@ -114,6 +141,7 @@ export default function SearchPage() {
                 abortRef.current?.abort();
                 setStatus('idle');
                 setArticles([]);
+                setNextCursor(null);
               }
             }}
             placeholder="검색어를 입력해주세요"
@@ -200,7 +228,26 @@ export default function SearchPage() {
         </p>
       )}
 
-      {status === 'results' && <ArticleGrid articles={articles} />}
+      {status === 'results' && (
+        <SearchResultList
+          articles={articles}
+          query={query}
+          hasMore={nextCursor !== null}
+          loading={loadingMore}
+          onLoadMore={loadMore}
+          onSelectArticle={(article, position) => {
+            setSelectedArticle(article);
+            setSelectedPosition(position);
+          }}
+        />
+      )}
+
+      <ArticlePreviewSheet
+        article={selectedArticle}
+        query={query}
+        position={selectedPosition}
+        onClose={() => setSelectedArticle(null)}
+      />
     </main>
   );
 }

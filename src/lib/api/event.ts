@@ -1,5 +1,6 @@
 import { getAccessToken } from './auth';
 import { getApiBaseUrl } from './baseUrl';
+import { getDeviceId } from '@/lib/device';
 
 export const TARGET_TYPE = {
   BLOG: 'BLOG',
@@ -23,6 +24,10 @@ export const EVENT_TYPE = {
   BLOG_IN: 'BLOG_IN',
   BLOG_TO_ARTICLE: 'BLOG_TO_ARTICLE',
   B_IMP: 'B_IMP',
+  S_IMP: 'S_IMP',
+  S_PREVIEW: 'S_PREVIEW',
+  S_PREVIEW_DISMISS: 'S_PREVIEW_DISMISS',
+  S_CLICK: 'S_CLICK',
 } as const;
 
 export type EventType = (typeof EVENT_TYPE)[keyof typeof EVENT_TYPE];
@@ -32,21 +37,20 @@ export interface EventExtras {
   dwellTimeMs?: number;
   /** Free-form source label (e.g. 'feed', 'bookmarks', 'blog', 'search'). */
   source?: string;
+  /** Position in list (0-indexed) — for position bias correction. */
+  position?: number;
+  /** Arbitrary JSON metadata (e.g. search query). */
+  metadata?: Record<string, unknown>;
 }
 
-// Cross-tab coordination: once we see a 401 for events, stop trying for
-// the rest of the session so scrolling doesn't keep printing errors. A
-// fresh login (which rewrites the accessToken) resets the flag below.
+// Cross-tab coordination: once we see a 401 for authenticated events,
+// stop trying auth-required events for the rest of the session.
 let sessionDisabled = false;
 let disabledForToken: string | null = null;
 
 /**
- * Fire-and-forget analytics. Intentionally does NOT go through the
- * ApiClient — that layer auto-retries 401s and kicks a refresh flow,
- * which both pollute the console with extra errors for something we
- * can't do anything about. Events bypass all of that: plain fetch,
- * silent failure, and if we hit 401 once we disable tracking for the
- * current token so subsequent events don't keep failing.
+ * Fire-and-forget analytics. Works for both authenticated and anonymous
+ * users. Anonymous events include device_id for later merge on signup.
  */
 export const sendEvent = (
   targetType: TargetType,
@@ -57,49 +61,50 @@ export const sendEvent = (
   if (typeof window === 'undefined') return;
 
   const token = getAccessToken();
-  // No token at all — server will 401 and we can't do anything useful,
-  // so skip entirely.
-  if (!token) return;
+  const deviceId = getDeviceId();
 
-  // We already saw a 401 for this token during this session — stop
-  // bothering until the user logs in again (which issues a new token).
-  if (sessionDisabled && disabledForToken === token) return;
-  // If token was swapped (new login), re-enable.
-  if (disabledForToken !== null && disabledForToken !== token) {
+  // Need at least one identifier
+  if (!token && !deviceId) return;
+
+  // If we saw a 401 for this token, skip auth-required events
+  if (token && sessionDisabled && disabledForToken === token) return;
+  if (token && disabledForToken !== null && disabledForToken !== token) {
     sessionDisabled = false;
     disabledForToken = null;
   }
 
   const body: Record<string, unknown> = {
-    // Legacy-compatible payload (bite-api accepts both camelCase legacy
-    // and snake_case preferred shapes in the same request).
     targetType,
     targetId,
     eventType,
     event_type: eventType,
+    device_id: deviceId,
   };
   if (targetType === 'ARTICLE') body.article_id = targetId;
   if (extras.dwellTimeMs !== undefined) {
     body.dwell_time_ms = Math.max(0, Math.round(extras.dwellTimeMs));
   }
   if (extras.source) body.source = extras.source;
+  if (extras.position !== undefined) body.position = extras.position;
+  if (extras.metadata) body.metadata = extras.metadata;
 
   const baseUrl = getApiBaseUrl();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
-  // Raw fetch so we bypass the ApiClient's retry-on-401 + refresh flow.
-  // Analytics should never trigger a token refresh dance.
   fetch(`${baseUrl}/v1/events`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     body: JSON.stringify(body),
     credentials: 'include',
-    keepalive: true, // survive page unload (e.g. ARTICLE_OUT on tab close)
+    keepalive: true,
   })
     .then((res) => {
-      if (res.status === 401) {
+      if (token && res.status === 401) {
         sessionDisabled = true;
         disabledForToken = token;
       }
