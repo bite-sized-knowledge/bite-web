@@ -14,7 +14,7 @@ interface FeedCardProps {
 
 export const FeedCard: React.FC<FeedCardProps> = ({ article, onUninterest }) => {
   return (
-    <div className="min-w-[320px] w-full overflow-hidden rounded-2xl bg-[var(--color-card-bg)] shadow-md">
+    <div className="min-w-[320px] w-full overflow-hidden rounded-2xl bg-[var(--color-card-bg)] shadow-md border border-[var(--color-border)]">
       <CardHeader
         blog={article.blog}
         trailing={

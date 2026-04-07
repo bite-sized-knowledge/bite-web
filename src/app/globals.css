@@ -11,7 +11,7 @@
   --color-sub: #FF7A0D;
   --color-error: #FB3939;
   --color-green: #34C759;
-  --color-card-bg: #FAFAFA;
+  --color-card-bg: #FFFFFF;
 
   /* Surface tokens — split out from gray4 so cards, borders and dividers
      can each be tuned independently for contrast on light/dark. */

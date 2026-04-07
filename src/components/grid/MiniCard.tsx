@@ -48,7 +48,7 @@ export default function MiniCard({
     <button
       type="button"
       onClick={handleClick}
-      className="min-w-[160px] min-h-[160px] rounded-lg overflow-hidden bg-[var(--color-card-bg)] shadow-sm text-left w-full cursor-pointer hover:shadow-md transition-shadow"
+      className="min-w-[160px] min-h-[160px] rounded-lg overflow-hidden bg-[var(--color-card-bg)] shadow-sm border border-[var(--color-border)] text-left w-full cursor-pointer hover:shadow-md transition-shadow"
     >
       {/* Image */}
       <div className="w-full h-[80px] overflow-hidden">
