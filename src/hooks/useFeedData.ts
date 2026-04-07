@@ -147,6 +147,22 @@ export function useFeedData(selectedTab: TabType) {
     dispatchRecommended({ type: 'remove', articleId });
   }, []);
 
+  // Full refresh: clear articles + reset cursor + refetch from scratch.
+  // Used by scroll-to-top button to reload the latest feed.
+  const refresh = useCallback(() => {
+    if (selectedTab === 'latest') {
+      dispatchRecent({ type: 'reset' });
+      setFrom(null);
+      setFetchMoreRequested(false);
+      // Small delay to let state flush before refetch
+      setTimeout(() => refetchRecent(), 0);
+    } else {
+      dispatchRecommended({ type: 'reset' });
+      setFetchMoreRequested(false);
+      setTimeout(() => refetchRecommended(), 0);
+    }
+  }, [selectedTab, refetchRecent, refetchRecommended]);
+
   return {
     articles,
     isLoading,
@@ -156,5 +172,6 @@ export function useFeedData(selectedTab: TabType) {
     getNextData,
     refetch: selectedTab === 'latest' ? refetchRecent : refetchRecommended,
     removeArticle,
+    refresh,
   };
 }

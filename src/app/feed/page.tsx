@@ -26,6 +26,7 @@ export default function FeedPage() {
     error,
     getNextData,
     removeArticle,
+    refresh,
   } = useFeedData(selectedTab);
 
   const handleTabChange = (tab: TabType) => {
@@ -66,6 +67,7 @@ export default function FeedPage() {
             getNextData={getNextData}
             selectedTab={selectedTab}
             onUninterest={removeArticle}
+            onRefresh={refresh}
           />
         </motion.div>
       </AnimatePresence>

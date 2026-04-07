@@ -222,6 +222,58 @@ body {
 }
 
 /* =============================================
+   Feed floating buttons (resume reading / scroll-to-top)
+   ============================================= */
+.feed-floating-btn {
+  position: fixed;
+  z-index: 100;
+  bottom: calc(var(--tabbar-height) + 64px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  border: none;
+  background: var(--color-main);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+
+.feed-floating-btn:active {
+  opacity: 0.9;
+  transform: translateX(-50%) scale(0.97);
+}
+
+@media (min-width: 820px) and (orientation: landscape) {
+  .feed-floating-btn {
+    bottom: 32px;
+    left: auto;
+    right: 32px;
+    transform: none;
+  }
+  .feed-floating-btn:active {
+    transform: scale(0.97);
+  }
+}
+
+.feed-floating-spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* =============================================
    Responsive navigation
 
    Strategy: render both Sidebar and BottomTabBar always (under the

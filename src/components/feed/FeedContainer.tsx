@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { Article } from '@/types/Article';
 import { FeedCard } from './FeedCard';
 import { CardSkeleton } from './CardSkeleton';
 import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
 import { useFeedScroll } from '@/hooks/useFeedScroll';
+import { ResumeReadingButton } from './ResumeReadingButton';
+import { ScrollToTopButton } from './ScrollToTopButton';
 
 interface FeedContainerProps {
   articles: Article[];
@@ -14,6 +17,7 @@ interface FeedContainerProps {
   getNextData: () => void;
   selectedTab: 'latest' | 'recommend';
   onUninterest: (articleId: string) => void;
+  onRefresh: () => void;
 }
 
 type TabKey = 'latest' | 'recommend';
@@ -79,6 +83,7 @@ interface ResumeState {
   articleId?: string;
   index?: number;
   ts?: number;
+  topArticleId?: string;
 }
 
 function readResume(tab: TabKey): ResumeState | null {
@@ -113,6 +118,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   getNextData,
   selectedTab,
   onUninterest,
+  onRefresh,
 }) => {
   const [indexByTab, setIndexByTab] = useState<Record<TabKey, number>>({
     latest: 0,
@@ -128,6 +134,15 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   // How many times we've asked for another page during restore. Caps
   // the cascade so a shorter-than-saved feed doesn't loop forever.
   const restoreFetchAttemptsRef = useRef(0);
+
+  // --- Resume reading state ---
+  const [resumeTarget, setResumeTarget] = useState<ResumeState | null>(null);
+  const [isResuming, setIsResuming] = useState(false);
+  const [showResumeButton, setShowResumeButton] = useState(false);
+  const resumeFetchAttemptsRef = useRef(0);
+
+  // --- Scroll-to-top + refresh state ---
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // "Anchor" = the card we consider the user to be on right now. Used to
   // compute next/prev targets and to detect & roll back over-scrolls.
@@ -168,7 +183,16 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   // hand-rolled rAF loop with a fixed 260ms ease-out-cubic gives us a
   // snappier, more controllable animation.
   // --------------------------------------------------------------------------
-  const scrollToIndex = (rawIdx: number, behavior: ScrollBehavior = 'smooth') => {
+  interface ScrollOptions {
+    durationMs?: number;
+    ease?: (t: number) => number;
+  }
+
+  const scrollToIndex = (
+    rawIdx: number,
+    behavior: ScrollBehavior = 'smooth',
+    opts?: ScrollOptions,
+  ) => {
     const el = scrollElRef.current;
     if (!el) return;
     const clamped = Math.max(0, Math.min(rawIdx, maxIndex));
@@ -196,7 +220,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     const start = el.scrollTop;
     const distance = target - start;
     const startTime = performance.now();
-    const duration = ANIMATION_MS;
+    const duration = opts?.durationMs ?? ANIMATION_MS;
 
     // Commit the logical anchor synchronously so subsequent keypresses
     // compute from the new target, not wherever the pixel happens to be.
@@ -206,13 +230,11 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     );
     animatingUntilRef.current = Date.now() + duration;
 
-    // easeInOutCubic — smooth on BOTH ends. Previous easeOutQuint felt
-    // "stiff" because the animation started at full velocity (jerk);
-    // this curve ramps velocity up gently, cruises through the middle,
-    // and decelerates to a stop. No overshoot, no bounce — just a
-    // breathy glide.
-    const ease = (t: number) =>
+    // Default: easeInOutCubic — smooth on BOTH ends for single-card hops.
+    // Callers can override with a custom ease for different feel.
+    const defaultEase = (t: number) =>
       t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const ease = opts?.ease ?? defaultEase;
 
     const tick = (now: number) => {
       const elapsed = now - startTime;
@@ -385,6 +407,12 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   // --------------------------------------------------------------------------
   // Restore saved position on first articles-load for a tab.
   //
+  // For 'latest': if new articles exist (top article changed), start at
+  // index 0 and show a "resume reading" button. If no new articles,
+  // restore to the saved position as before.
+  //
+  // For 'recommend': always restore to saved position (existing logic).
+  //
   // The saved index may live on a page we haven't fetched yet (e.g. the
   // user was on card 25 but first-page returns 10). In that case we
   // progressively trigger `getNextData()` across renders until enough
@@ -401,7 +429,65 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
       return;
     }
 
-    // Prefer articleId — survives new-article insertion at the top.
+    // --- Latest tab: show new articles first, offer resume button ---
+    if (selectedTab === 'latest') {
+      // If the feed top hasn't changed, no new articles → normal restore
+      const feedUnchanged =
+        saved.topArticleId && articles[0]?.id === saved.topArticleId;
+
+      if (feedUnchanged) {
+        // No new articles — restore to saved position
+        if (saved.articleId) {
+          const idx = articles.findIndex((a) => a.id === saved.articleId);
+          if (idx >= 0) {
+            restoredRef.current[selectedTab] = true;
+            requestAnimationFrame(() => scrollToIndex(idx, 'auto'));
+            return;
+          }
+        }
+        const savedIdx = typeof saved.index === 'number' ? saved.index : 0;
+        if (savedIdx <= 0) {
+          restoredRef.current[selectedTab] = true;
+          return;
+        }
+        if (savedIdx < totalItems) {
+          restoredRef.current[selectedTab] = true;
+          requestAnimationFrame(() => scrollToIndex(savedIdx, 'auto'));
+          return;
+        }
+        // Need more data — progressive fetch
+        if (isFetchingMore) return;
+        restoreFetchAttemptsRef.current += 1;
+        if (restoreFetchAttemptsRef.current > 10) {
+          restoredRef.current[selectedTab] = true;
+          requestAnimationFrame(() =>
+            scrollToIndex(Math.max(0, totalItems - 1), 'auto'),
+          );
+          return;
+        }
+        getNextData();
+        return;
+      }
+
+      // New articles exist (or first visit with topArticleId not saved)
+      // Check if saved position IS already index 0 → no button needed
+      if (saved.articleId && articles[0]?.id === saved.articleId) {
+        restoredRef.current[selectedTab] = true;
+        return;
+      }
+      if (!saved.articleId && (saved.index === 0 || saved.index == null)) {
+        restoredRef.current[selectedTab] = true;
+        return;
+      }
+
+      // Stay at index 0, show resume button
+      restoredRef.current[selectedTab] = true;
+      setResumeTarget(saved);
+      setShowResumeButton(true);
+      return;
+    }
+
+    // --- Recommend tab: always restore to saved position (unchanged) ---
     if (saved.articleId) {
       const idx = articles.findIndex((a) => a.id === saved.articleId);
       if (idx >= 0) {
@@ -411,8 +497,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
       }
     }
 
-    // Fall back to the raw saved index. If it's within the currently
-    // loaded range, restore immediately.
     const savedIdx = typeof saved.index === 'number' ? saved.index : 0;
     if (savedIdx <= 0) {
       restoredRef.current[selectedTab] = true;
@@ -424,14 +508,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
       return;
     }
 
-    // Target is beyond the currently loaded range. If a fetch is
-    // already in flight, wait — the effect will re-run once new
-    // articles merge. Otherwise kick off the next page fetch.
     if (isFetchingMore) return;
-
-    // Cap the cascade so a shorter-than-expected feed (articles
-    // deleted, etc.) doesn't loop forever. After N attempts with no
-    // progress, give up and restore to the last available position.
     restoreFetchAttemptsRef.current += 1;
     if (restoreFetchAttemptsRef.current > 10) {
       restoredRef.current[selectedTab] = true;
@@ -445,6 +522,145 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   }, [articles, selectedTab, totalItems, isFetchingMore]);
 
   // --------------------------------------------------------------------------
+  // Resume reading: progressive fetch when user clicks the button
+  // --------------------------------------------------------------------------
+  useLayoutEffect(() => {
+    if (!isResuming || !resumeTarget) return;
+    if (totalItems === 0) return;
+
+    if (resumeTarget.articleId) {
+      const idx = articles.findIndex((a) => a.id === resumeTarget.articleId);
+      if (idx >= 0) {
+        setIsResuming(false);
+        setResumeTarget(null);
+        setShowResumeButton(false);
+        resumeFetchAttemptsRef.current = 0;
+        requestAnimationFrame(() => scrollToIndex(idx, 'smooth'));
+        return;
+      }
+    }
+
+    const savedIdx = typeof resumeTarget.index === 'number' ? resumeTarget.index : 0;
+    if (savedIdx < totalItems) {
+      setIsResuming(false);
+      setResumeTarget(null);
+      setShowResumeButton(false);
+      resumeFetchAttemptsRef.current = 0;
+      requestAnimationFrame(() => scrollToIndex(savedIdx, 'smooth'));
+      return;
+    }
+
+    // Need more data
+    if (isFetchingMore) return;
+    resumeFetchAttemptsRef.current += 1;
+    if (resumeFetchAttemptsRef.current > 10) {
+      setIsResuming(false);
+      setResumeTarget(null);
+      setShowResumeButton(false);
+      resumeFetchAttemptsRef.current = 0;
+      return;
+    }
+    getNextData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isResuming, resumeTarget, articles, totalItems, isFetchingMore]);
+
+  // --------------------------------------------------------------------------
+  // Dismiss resume button on scroll engagement or tab switch
+  // --------------------------------------------------------------------------
+  useEffect(() => {
+    if (selectedTab !== 'latest' || !showResumeButton) return;
+    if (currentIndex >= 3) {
+      setShowResumeButton(false);
+      setResumeTarget(null);
+    }
+  }, [currentIndex, selectedTab, showResumeButton]);
+
+  useEffect(() => {
+    if (selectedTab !== 'latest') {
+      setShowResumeButton(false);
+      setResumeTarget(null);
+      setIsResuming(false);
+    }
+  }, [selectedTab]);
+
+  // --------------------------------------------------------------------------
+  // Clear refreshing state when new data arrives after a refresh
+  // --------------------------------------------------------------------------
+  useEffect(() => {
+    if (isRefreshing && totalItems > 0 && !isLoading) {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing, totalItems, isLoading]);
+
+  // --------------------------------------------------------------------------
+  // Handlers
+  // --------------------------------------------------------------------------
+  const handleResumeClick = useCallback(() => {
+    if (!resumeTarget) return;
+    setIsResuming(true);
+  }, [resumeTarget]);
+
+  const handleResumeDismiss = useCallback(() => {
+    setShowResumeButton(false);
+    setResumeTarget(null);
+  }, []);
+
+  const handleScrollToTop = useCallback(() => {
+    const el = scrollElRef.current;
+    if (!el) return;
+    const cards = anchorIdxRef.current;
+    if (cards <= 0) return;
+
+    setIsRefreshing(true);
+
+    // Cancel any in-flight animation.
+    if (rafIdRef.current != null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+
+    const startPos = el.scrollTop;
+
+    // Each card gets ~130ms of visibility so you actually see them
+    // rushing past — like a human flick. Capped to stay snappy.
+    const totalDuration = Math.min(1200, 300 + cards * 130);
+
+    // easeInOutQuart: gentle lift-off → fast rush through middle →
+    // soft landing. Aggressive enough to feel exciting, gentle enough
+    // that every card is briefly visible as it flies by.
+    const ease = (t: number) =>
+      t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+
+    // Commit logical state synchronously.
+    anchorIdxRef.current = 0;
+    setIndexByTab((p) =>
+      p[selectedTab] === 0 ? p : { ...p, [selectedTab]: 0 },
+    );
+    animatingUntilRef.current = Date.now() + totalDuration;
+
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / totalDuration);
+      el.scrollTop = startPos * (1 - ease(t));
+      if (t < 1) {
+        rafIdRef.current = requestAnimationFrame(tick);
+      } else {
+        rafIdRef.current = null;
+        // Refresh AFTER animation finishes so cards don't vanish mid-scroll.
+        onRefresh();
+      }
+    };
+    rafIdRef.current = requestAnimationFrame(tick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onRefresh, selectedTab]);
+
+  // Show scroll-to-top when deep in the feed and resume button is not active
+  const showScrollTopButton =
+    currentIndex >= 3 && !showResumeButton && !isResuming;
+
+  // --------------------------------------------------------------------------
   // Persist + impression + pagination — off the settled currentIndex
   // --------------------------------------------------------------------------
   useEffect(() => {
@@ -456,7 +672,11 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     if (!restoredRef.current[selectedTab]) return;
     const article = articles[currentIndex];
     if (!article) return;
-    writeResume(selectedTab, { articleId: article.id, index: currentIndex });
+    writeResume(selectedTab, {
+      articleId: article.id,
+      index: currentIndex,
+      topArticleId: articles[0]?.id,
+    });
   }, [currentIndex, articles, totalItems, selectedTab]);
 
   useEffect(() => {
@@ -483,35 +703,53 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   // --------------------------------------------------------------------------
   // Render
   // --------------------------------------------------------------------------
-  const showingSkeletons = isLoading && totalItems === 0;
+  const showingSkeletons = (isLoading || isRefreshing) && totalItems === 0;
 
   return (
-    <div
-      className="feed-scroll-area"
-      ref={scrollElRef}
-    >
-      {showingSkeletons
-        ? [0, 1, 2].map((i) => (
-            <div className="feed-snap-item" key={`sk-${i}`}>
-              <div className="feed-card-sizer">
-                <CardSkeleton />
+    <>
+      <div
+        className="feed-scroll-area"
+        ref={scrollElRef}
+      >
+        {showingSkeletons
+          ? [0, 1, 2].map((i) => (
+              <div className="feed-snap-item" key={`sk-${i}`}>
+                <div className="feed-card-sizer">
+                  <CardSkeleton />
+                </div>
               </div>
-            </div>
-          ))
-        : articles.map((article) => (
-            <div className="feed-snap-item" key={article.id}>
-              <div className="feed-card-sizer">
-                <FeedCard article={article} onUninterest={onUninterest} />
+            ))
+          : articles.map((article) => (
+              <div className="feed-snap-item" key={article.id}>
+                <div className="feed-card-sizer">
+                  <FeedCard article={article} onUninterest={onUninterest} />
+                </div>
               </div>
+            ))}
+        {isFetchingMore && (
+          <div className="feed-snap-item" key="loading-more">
+            <div className="feed-card-sizer">
+              <CardSkeleton />
             </div>
-          ))}
-      {isFetchingMore && (
-        <div className="feed-snap-item" key="loading-more">
-          <div className="feed-card-sizer">
-            <CardSkeleton />
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+      <AnimatePresence>
+        {showResumeButton && !isResuming && (
+          <ResumeReadingButton
+            key="resume"
+            onClick={handleResumeClick}
+            onDismiss={handleResumeDismiss}
+          />
+        )}
+        {showScrollTopButton && (
+          <ScrollToTopButton
+            key="scroll-top"
+            onClick={handleScrollToTop}
+            isRefreshing={isRefreshing}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 };
