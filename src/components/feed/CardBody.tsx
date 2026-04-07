@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Article } from '@/types/Article';
 import { useArticleReaderEvents } from '@/hooks/useArticleReaderEvents';
+
+const DEFAULT_THUMBNAIL = '/default-thumbnail.png';
 
 interface CardBodyProps {
   article: Article;
@@ -10,7 +12,8 @@ interface CardBodyProps {
 
 export const CardBody: React.FC<CardBodyProps> = ({ article }) => {
   const thumbnail =
-    article.thumbnail || article.category?.thumbnail || null;
+    article.thumbnail || article.category?.thumbnail || DEFAULT_THUMBNAIL;
+  const [imgSrc, setImgSrc] = useState(thumbnail);
   const { openArticle } = useArticleReaderEvents();
 
   const handleClick = () => {
@@ -19,18 +22,15 @@ export const CardBody: React.FC<CardBodyProps> = ({ article }) => {
 
   return (
     <button onClick={handleClick} className="block w-full text-left">
-      {thumbnail ? (
-        <img
-          src={thumbnail}
-          alt={article.title}
-          className="feed-thumbnail w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <div className="feed-thumbnail flex w-full items-center justify-center bg-[var(--color-gray4)]">
-          <span className="text-4xl text-[var(--color-gray3)]">B</span>
-        </div>
-      )}
+      <img
+        src={imgSrc}
+        alt={article.title}
+        className="feed-thumbnail w-full object-cover"
+        loading="lazy"
+        onError={() => {
+          if (imgSrc !== DEFAULT_THUMBNAIL) setImgSrc(DEFAULT_THUMBNAIL);
+        }}
+      />
 
       <div className="feed-card-content">
         <h3 className="feed-card-title line-clamp-2 font-semibold text-[var(--color-text)]">

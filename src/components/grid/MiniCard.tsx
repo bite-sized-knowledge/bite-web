@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { Article } from '@/types/Article';
 import { useArticleReaderEvents } from '@/hooks/useArticleReaderEvents';
+
+const DEFAULT_THUMBNAIL = '/default-thumbnail.png';
 
 interface MiniCardProps {
   article: Article;
@@ -28,13 +31,13 @@ export default function MiniCard({
   onBeforeOpen,
 }: MiniCardProps) {
   const { openArticle } = useArticleReaderEvents();
+  const thumbnail =
+    article.thumbnail || article.category?.thumbnail || article.category?.image || DEFAULT_THUMBNAIL;
+  const [imgSrc, setImgSrc] = useState(thumbnail);
 
   if (isPlaceholder) {
     return <div className="min-w-[160px] min-h-[160px]" />;
   }
-
-  const thumbnail =
-    article.thumbnail || article.category?.thumbnail || article.category?.image || '/default-thumbnail.png';
 
   const handleClick = () => {
     onBeforeOpen?.(article.id);
@@ -50,12 +53,15 @@ export default function MiniCard({
       {/* Image */}
       <div className="w-full h-[80px] overflow-hidden">
         <Image
-          src={thumbnail}
+          src={imgSrc}
           alt={article.title}
           width={160}
           height={80}
           className="w-full h-full object-cover rounded-t-lg"
           unoptimized
+          onError={() => {
+            if (imgSrc !== DEFAULT_THUMBNAIL) setImgSrc(DEFAULT_THUMBNAIL);
+          }}
         />
       </div>
 
