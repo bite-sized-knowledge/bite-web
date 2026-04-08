@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { login } from '@/lib/api/auth';
 import { useAuth } from '@/lib/auth/provider';
+import { syncLocalBookmarksToServer } from '@/lib/localBookmarks';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -30,6 +31,7 @@ export default function LoginPage() {
       const success = await login(email, password);
 
       if (success) {
+        syncLocalBookmarksToServer();
         setLoggedIn(true);
         router.push('/feed');
       } else {

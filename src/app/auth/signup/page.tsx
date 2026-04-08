@@ -9,6 +9,7 @@ import {
   signUp,
 } from '@/lib/api/auth';
 import { useAuth } from '@/lib/auth/provider';
+import { syncLocalBookmarksToServer } from '@/lib/localBookmarks';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -142,6 +143,7 @@ export default function SignUpPage() {
       const success = await signUp({ email, password, birth: year });
 
       if (success) {
+        syncLocalBookmarksToServer();
         setLoggedIn(true);
         router.push('/auth/signup/welcome');
       } else {

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
+import { syncLocalBookmarksToServer } from '@/lib/localBookmarks';
 
 /**
  * OAuth provider callback state machine.
@@ -84,6 +85,7 @@ export function useOAuthCallback(
       try {
         const success = await exchange(code);
         if (success) {
+          syncLocalBookmarksToServer();
           setLoggedIn(true);
           router.push('/feed');
         } else {

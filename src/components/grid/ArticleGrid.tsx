@@ -10,6 +10,7 @@ interface ArticleGridProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   onArticleBeforeOpen?: (articleId: string) => void;
+  onArticleClick?: (article: Article) => void;
   gridRef?: React.Ref<HTMLDivElement>;
 }
 
@@ -19,6 +20,7 @@ export default function ArticleGrid({
   onLoadMore,
   hasMore = false,
   onArticleBeforeOpen,
+  onArticleClick,
   gridRef,
 }: ArticleGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -49,7 +51,7 @@ export default function ArticleGrid({
     <div className="p-4">
       <div
         ref={gridRef}
-        className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-4"
+        className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5 2xl:grid-cols-6"
       >
         {articles.map((article, index) => (
           <div
@@ -59,6 +61,7 @@ export default function ArticleGrid({
             <MiniCard
               article={article}
               onBeforeOpen={onArticleBeforeOpen}
+              onArticleClick={onArticleClick}
             />
           </div>
         ))}

@@ -1,12 +1,19 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Article } from '@/types/Article';
 import {
   useLikeMutation,
   useBookmarkMutation,
   useShareMutation,
 } from '@/hooks/useArticleMutations';
+import { useAuth } from '@/lib/auth/provider';
+import {
+  isLocallyBookmarked,
+  addLocalBookmark,
+  removeLocalBookmark,
+} from '@/lib/localBookmarks';
+import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
 import { useToast } from '@/components/ui/Toast';
 import { Icon } from '@/components/ui/Icon';
 
@@ -15,9 +22,12 @@ interface CardFooterProps {
 }
 
 export const CardFooter: React.FC<CardFooterProps> = ({ article }) => {
+  const { isLoggedIn } = useAuth();
   const [liked, setLiked] = useState(article.isLiked);
   const [likeCount, setLikeCount] = useState(article.likeCount);
-  const [bookmarked, setBookmarked] = useState(article.isArchived);
+  const [bookmarked, setBookmarked] = useState(
+    isLoggedIn ? article.isArchived : isLocallyBookmarked(article.id),
+  );
   const [shareCount, setShareCount] = useState(article.shareCount);
   const [hasShared, setHasShared] = useState(false);
   const toast = useToast();
@@ -38,8 +48,23 @@ export const CardFooter: React.FC<CardFooterProps> = ({ article }) => {
   }, [liked, likeMutation]);
 
   const handleBookmark = useCallback(() => {
-    bookmarkMutation.mutate(bookmarked);
-  }, [bookmarked, bookmarkMutation]);
+    if (isLoggedIn) {
+      bookmarkMutation.mutate(bookmarked);
+    } else {
+      const newBookmarked = !bookmarked;
+      if (newBookmarked) {
+        addLocalBookmark(article);
+      } else {
+        removeLocalBookmark(article.id);
+      }
+      setBookmarked(newBookmarked);
+      sendEvent(
+        TARGET_TYPE.ARTICLE,
+        article.id,
+        newBookmarked ? EVENT_TYPE.ARCHIVE : EVENT_TYPE.ARCHIVE_CANCEL,
+      );
+    }
+  }, [bookmarked, bookmarkMutation, isLoggedIn, article]);
 
   const handleShare = useCallback(async () => {
     let copied = false;
