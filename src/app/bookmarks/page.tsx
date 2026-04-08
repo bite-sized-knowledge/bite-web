@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/provider';
@@ -13,9 +13,6 @@ import { Icon } from '@/components/ui/Icon';
 import { Article } from '@/types/Article';
 import { getAccessToken } from '@/lib/api/auth';
 import { decodeJwt } from 'jose';
-
-const EMPTY_ARTICLES: Article[] = [];
-const noop = () => () => {};
 
 export default function BookmarksPage() {
   const { isLoggedIn } = useAuth();
@@ -48,15 +45,14 @@ export default function BookmarksPage() {
     [data],
   );
 
-  const getClientSnapshot = useCallback(
-    () => (isLoggedIn ? EMPTY_ARTICLES : getLocalBookmarkedArticles()),
-    [isLoggedIn],
-  );
-  const localArticles = useSyncExternalStore(
-    noop,
-    getClientSnapshot,
-    () => EMPTY_ARTICLES,
-  );
+  const [localArticles, setLocalArticles] = useState<Article[]>([]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is an external system unavailable during SSR; reading it on mount is the only safe approach.
+      setLocalArticles(getLocalBookmarkedArticles());
+    }
+  }, [isLoggedIn]);
 
   const articles = isLoggedIn ? serverArticles : localArticles;
 
