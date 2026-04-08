@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -26,25 +27,25 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     href: '/feed',
-    label: 'Home',
+    label: '홈',
     DefaultIcon: HomeDefaultIcon,
     ActiveIcon: HomeFillIcon,
   },
   {
     href: '/search',
-    label: 'Search',
+    label: '검색',
     DefaultIcon: SearchIcon,
     ActiveIcon: SearchIcon,
   },
   {
     href: '/bookmarks',
-    label: 'Bookmark',
+    label: '북마크',
     DefaultIcon: CookieBoxDefaultIcon,
     ActiveIcon: CookieBoxFillIcon,
   },
   {
     href: '/my',
-    label: 'My',
+    label: '마이페이지',
     DefaultIcon: MyDefaultIcon,
     ActiveIcon: MyFillIcon,
   },
@@ -54,6 +55,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { scrollToTop } = useFeedScroll();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleClick = (href: string) => (e: React.MouseEvent) => {
     if (href === '/feed' && (pathname === '/feed' || pathname.startsWith('/feed/'))) {
@@ -66,7 +68,19 @@ export function Sidebar() {
   };
 
   return (
-    <nav className="sidebar-nav" aria-label="주 내비게이션">
+    <nav
+      className="sidebar-nav"
+      aria-label="주 내비게이션"
+      aria-expanded={isExpanded}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+      onFocus={() => setIsExpanded(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setIsExpanded(false);
+        }
+      }}
+    >
       <Link href="/feed" className="sidebar-logo" aria-label="BITE 홈">
         <Image
           src="/logo.png"
@@ -76,6 +90,7 @@ export function Sidebar() {
           priority
           style={{ width: 48, height: 48 }}
         />
+        <span className="sidebar-logo-text" aria-hidden>BITE</span>
       </Link>
 
       <div className="sidebar-items">
@@ -94,6 +109,7 @@ export function Sidebar() {
               data-active={isActive}
             >
               <IconComponent size={26} />
+              <span className="sidebar-label" aria-hidden>{item.label}</span>
             </Link>
           );
         })}
