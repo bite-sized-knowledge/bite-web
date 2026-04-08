@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Pen tool cursor -->
+  <path d="M60 20L38 90l22-16 22 16L60 20z" stroke="#6C6C6C" stroke-width="4" stroke-linejoin="round" fill="none"/>
+  <!-- Inner accent -->
+  <path d="M60 44L50 74l10-7 10 7L60 44z" fill="#FF6E1C" opacity="0.25"/>
+  <!-- Pen tip -->
+  <circle cx="60" cy="20" r="4" fill="#FF6E1C"/>
+  <!-- Anchor points -->
+  <rect x="34" y="86" width="8" height="8" rx="1" stroke="#FF6E1C" stroke-width="3"/>
+  <rect x="78" y="86" width="8" height="8" rx="1" stroke="#FF6E1C" stroke-width="3"/>
+  <!-- Bezier handles -->
+  <line x1="38" y1="90" x2="52" y2="74" stroke="#6C6C6C" stroke-width="2" stroke-dasharray="4 3"/>
+  <line x1="82" y1="90" x2="68" y2="74" stroke="#6C6C6C" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="52" cy="74" r="3" fill="#6C6C6C"/>
+  <circle cx="68" cy="74" r="3" fill="#6C6C6C"/>
+</svg>

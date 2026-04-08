@@ -64,6 +64,18 @@ export default function MyPage() {
         <Icon name="arrow_right" size={18} />
       </button>
 
+      {/* Interest section */}
+      <button
+        type="button"
+        onClick={() => router.push('/my/interests')}
+        className="flex items-center w-full px-4 py-5 border-b border-[var(--color-divider)] cursor-pointer text-left"
+      >
+        <span className="flex-1 text-lg font-bold text-[var(--color-text)]">
+          관심사 수정
+        </span>
+        <Icon name="arrow_right" size={18} />
+      </button>
+
       {/* Logout */}
       <div className="px-4 py-5">
         <button

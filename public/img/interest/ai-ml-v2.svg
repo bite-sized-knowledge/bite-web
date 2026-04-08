@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Brain outline -->
+  <path d="M60 22c-14 0-26 10-26 26 0 8 3 14 8 18v20h36V66c5-4 8-10 8-18 0-16-12-26-26-26z" stroke="#6C6C6C" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Brain center line -->
+  <line x1="60" y1="30" x2="60" y2="86" stroke="#6C6C6C" stroke-width="3"/>
+  <!-- Brain curves left -->
+  <path d="M60 40c-10 0-16 6-16 12" stroke="#6C6C6C" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M60 56c-8 0-12 4-12 8" stroke="#6C6C6C" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Brain curves right -->
+  <path d="M60 40c10 0 16 6 16 12" stroke="#6C6C6C" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M60 56c8 0 12 4 12 8" stroke="#6C6C6C" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Base lines -->
+  <line x1="42" y1="90" x2="78" y2="90" stroke="#FF6E1C" stroke-width="4" stroke-linecap="round"/>
+  <line x1="42" y1="98" x2="78" y2="98" stroke="#FF6E1C" stroke-width="4" stroke-linecap="round"/>
+  <!-- Spark nodes -->
+  <circle cx="36" cy="28" r="3" fill="#FF6E1C"/>
+  <circle cx="84" cy="28" r="3" fill="#FF6E1C"/>
+  <circle cx="28" cy="52" r="3" fill="#FF6E1C"/>
+  <circle cx="92" cy="52" r="3" fill="#FF6E1C"/>
+</svg>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { getApiBaseUrl } from '@/lib/api/baseUrl';
 
@@ -27,6 +27,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoggedIn, setLoggedIn] = useState(false);
   const [token, setToken] = useState<UserInfo | null>(null);
   const router = useRouter();
+
+  // Restore login state from localStorage after mount (avoids hydration mismatch)
+  useEffect(() => {
+    if (localStorage.getItem('accessToken')) {
+      setLoggedIn(true);
+    }
+  }, []);
 
   const logout = async () => {
     // Clear httpOnly refresh token cookie via server

@@ -60,7 +60,7 @@ export interface IToken {
  * Merge anonymous events collected before login with the now-authenticated member.
  * Fire-and-forget — failure should not block the auth flow.
  */
-const mergeAnonymousEvents = () => {
+export const mergeAnonymousEvents = () => {
   const deviceId = getDeviceId();
   if (!deviceId) return;
   api.post('/v1/events/merge', { deviceId }).catch(() => {});
@@ -89,13 +89,15 @@ export const login = async (email: string, password: string) => {
 };
 
 export const authenticationEmail = async (email: string) => {
-  return await api.post('/v1/auth/email/request-verify', { email });
+  return await api.post('/v1/auth/email/request-verify', { email }, {}, false);
 };
 
 export const verifyEmail = async (email: string): Promise<boolean> => {
   try {
     const { data } = await api.get<boolean>(
-      `/v1/auth/email/is-verified?email=${email}`,
+      `/v1/auth/email/is-verified?email=${encodeURIComponent(email)}`,
+      {},
+      false,
     );
     return data ?? false;
   } catch {
@@ -105,7 +107,7 @@ export const verifyEmail = async (email: string): Promise<boolean> => {
 
 export const checkNameDuplication = async (name: string) => {
   try {
-    const { error } = await api.get(`/v1/members/name/check?name=${name}`);
+    const { error } = await api.get(`/v1/members/name/check?name=${encodeURIComponent(name)}`);
     return error === null;
   } catch {
     return false;
@@ -118,24 +120,32 @@ interface SignUpParam {
   birth: number;
 }
 
-export const signUp = async ({ email, password, birth }: SignUpParam) => {
+interface SignUpResult {
+  success: boolean;
+  errorMessage?: string;
+}
+
+export const signUp = async ({ email, password, birth }: SignUpParam): Promise<SignUpResult> => {
   try {
-    const { data, error } = await api.post<IToken>('/v1/members/join', {
-      email,
-      password,
-      birth,
-    });
+    const { data, error } = await api.post<IToken>(
+      '/v1/members/join',
+      { email, password, birth },
+      {},
+      false,
+    );
 
     if (!error && data) {
       localStorage.setItem('accessToken', data.token.accessToken);
       // refresh token is set as httpOnly cookie by the server
-      return true;
+      mergeAnonymousEvents();
+      return { success: true };
     }
 
-    localStorage.removeItem('accessToken');
-    return false;
+    // Do NOT remove the guest access token here — it is still needed
+    // for retries and other protected calls during the signup flow.
+    return { success: false, errorMessage: error?.message };
   } catch {
-    return false;
+    return { success: false, errorMessage: '네트워크 오류가 발생했습니다.' };
   }
 };
 

@@ -86,7 +86,11 @@ export default function SignUpPage() {
     try {
       const { error: apiError } = await authenticationEmail(email);
       if (apiError) {
-        setEmailError('이메일 인증 요청에 실패했습니다.');
+        if (apiError.message?.includes('email already exists')) {
+          setEmailError('이미 가입된 이메일입니다.');
+        } else {
+          setEmailError('이메일 인증 요청에 실패했습니다.');
+        }
       } else {
         setEmailSent(true);
       }
@@ -140,14 +144,23 @@ export default function SignUpPage() {
     setError('');
 
     try {
-      const success = await signUp({ email, password, birth: year });
+      const result = await signUp({ email, password, birth: year });
 
-      if (success) {
+      if (result.success) {
         syncLocalBookmarksToServer();
         setLoggedIn(true);
         router.push('/auth/signup/welcome');
       } else {
-        setError('회원가입에 실패했습니다.');
+        const msg = result.errorMessage;
+        if (msg?.includes('already joined')) {
+          setError('이미 가입된 계정입니다.');
+        } else if (msg?.includes('email already exists')) {
+          setError('이미 사용 중인 이메일입니다.');
+        } else if (msg?.includes('email not verified')) {
+          setError('이메일 인증이 완료되지 않았습니다. 다시 시도해주세요.');
+        } else {
+          setError(msg || '회원가입에 실패했습니다.');
+        }
       }
     } catch {
       setError('오류가 발생했습니다.');

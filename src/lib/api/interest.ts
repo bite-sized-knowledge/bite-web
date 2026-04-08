@@ -1,11 +1,11 @@
 import { api } from './client';
-import { IToken, setAccessToken } from './auth';
-import { getDeviceId } from '@/lib/device';
+import { IToken, setAccessToken, mergeAnonymousEvents } from './auth';
 
-interface Interest {
+export interface Interest {
   id: number;
   name: string;
   image: string;
+  thumbnail: string;
 }
 
 export const getInterests = async () => {
@@ -24,17 +24,23 @@ export const getGuestAccount = async (interestIds: number[]) => {
 
     if (!data) return false;
 
-    // Refresh token is delivered via httpOnly cookie by the server.
     setAccessToken(data.token.accessToken);
-
-    // Merge anonymous events to the new guest account
-    const deviceId = getDeviceId();
-    if (deviceId) {
-      api.post('/v1/events/merge', { deviceId }).catch(() => {});
-    }
+    mergeAnonymousEvents();
 
     return true;
   } catch {
     return false;
   }
+};
+
+/** Save interests for a logged-in member. */
+export const saveInterests = async (interestIds: number[]) => {
+  const { error } = await api.put('/v1/members/interests', { interestIds });
+  return !error;
+};
+
+/** Get the current member's selected interest IDs. */
+export const getMyInterests = async () => {
+  const { data } = await api.get<number[]>('/v1/members/interests');
+  return data;
 };

@@ -2,42 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   getInterests,
-  getGuestAccount,
-  saveInterests,
   getMyInterests,
+  saveInterests,
 } from '@/lib/api/interest';
 import type { Interest } from '@/lib/api/interest';
-import { getAccessToken } from '@/lib/api/auth';
-import { syncLocalBookmarksToServer } from '@/lib/localBookmarks';
 import Button from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import InterestGrid from '@/components/interest/InterestGrid';
 
-export default function InterestPage() {
+export default function EditInterestsPage() {
   const router = useRouter();
   const [interests, setInterests] = useState<Interest[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
-    const token = getAccessToken();
-    setHasToken(!!token);
-
     const init = async () => {
       try {
-        const [data, existing] = await Promise.all([
+        const [all, mine] = await Promise.all([
           getInterests(),
-          token ? getMyInterests() : Promise.resolve(null),
+          getMyInterests(),
         ]);
-        if (data) setInterests(data);
-        if (existing && existing.length > 0) {
-          router.replace('/feed');
-          return;
-        }
+        if (all) setInterests(all);
+        if (mine) setSelectedIds(mine);
       } catch {
         // silently fail
       } finally {
@@ -45,7 +35,7 @@ export default function InterestPage() {
       }
     };
     init();
-  }, [router]);
+  }, []);
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) =>
@@ -53,19 +43,14 @@ export default function InterestPage() {
     );
   };
 
-  const handleStart = async () => {
+  const handleSave = async () => {
     if (selectedIds.length < 1 || submitting) return;
     setSubmitting(true);
-
     try {
-      const ok = hasToken
-        ? await saveInterests(selectedIds)
-        : await getGuestAccount(selectedIds);
-
+      const ok = await saveInterests(selectedIds);
       if (ok) {
-        if (hasToken) syncLocalBookmarksToServer();
         localStorage.setItem('interestIds', JSON.stringify(selectedIds));
-        router.push('/feed');
+        router.back();
       }
     } catch {
       // silently fail
@@ -91,18 +76,18 @@ export default function InterestPage() {
   }
 
   return (
-    <main className="min-h-svh flex flex-col">
+    <main className="min-h-svh flex flex-col bg-[var(--color-bg)]">
+      <header className="flex items-center h-[var(--header-height)] px-4">
+        <button type="button" onClick={() => router.back()} className="mr-3 cursor-pointer">
+          <Icon name="arrow_left" size={22} />
+        </button>
+        <h1 className="text-xl font-bold text-[var(--color-text)]">관심사 수정</h1>
+      </header>
+
       <div className="flex-1 w-full max-w-2xl mx-auto p-6">
-        <h1 className="text-2xl font-semibold text-[var(--color-text)] mb-1">
-          안녕하세요!
-        </h1>
-        <h2 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
-          관심있는 주제는 무엇인가요?
-        </h2>
         <p className="text-sm text-[var(--color-gray3)] mb-6">
           *중복 선택 할 수 있어요.
         </p>
-
         <InterestGrid
           interests={interests}
           selectedIds={selectedIds}
@@ -111,20 +96,12 @@ export default function InterestPage() {
       </div>
 
       <div className="sticky bottom-0 w-full max-w-2xl mx-auto p-6 bg-[var(--color-bg)]">
-        {!hasToken && (
-          <Link
-            href="/auth/login"
-            className="block text-center text-sm text-[var(--color-gray3)] underline mb-3"
-          >
-            이미 계정이 있나요? 로그인
-          </Link>
-        )}
         <Button
-          onClick={handleStart}
+          onClick={handleSave}
           disabled={selectedIds.length < 1}
           loading={submitting}
         >
-          시작하기
+          저장
         </Button>
       </div>
     </main>
