@@ -5,8 +5,7 @@ import Image from 'next/image';
 import { Article } from '@/types/Article';
 import { useArticleReaderEvents } from '@/hooks/useArticleReaderEvents';
 
-const DEFAULT_THUMBNAIL = '/default-thumbnail.png';
-const DEFAULT_FAVICON = '/default-thumbnail.png';
+import { DEFAULT_THUMBNAIL } from '@/lib/constants';
 
 interface MiniCardProps {
   article: Article;
@@ -41,7 +40,7 @@ export default function MiniCard({
   const thumbnail =
     article.thumbnail || article.category?.thumbnail || article.category?.image || DEFAULT_THUMBNAIL;
   const [imgSrc, setImgSrc] = useState(thumbnail);
-  const [faviconSrc, setFaviconSrc] = useState(article.blog?.favicon || DEFAULT_FAVICON);
+  const [faviconSrc, setFaviconSrc] = useState(article.blog?.favicon || DEFAULT_THUMBNAIL);
 
   if (isPlaceholder) {
     return <div className="min-w-[160px] min-h-[160px]" />;
@@ -89,7 +88,7 @@ export default function MiniCard({
               className="w-4 h-4 rounded-full object-cover shrink-0"
               unoptimized
               onError={() => {
-                if (faviconSrc !== DEFAULT_FAVICON) setFaviconSrc(DEFAULT_FAVICON);
+                if (faviconSrc !== DEFAULT_THUMBNAIL) setFaviconSrc(DEFAULT_THUMBNAIL);
               }}
             />
             <span className="text-xs text-[var(--color-gray3)] truncate">

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Article } from '@/types/Article';
 import { useArticleReaderEvents } from '@/hooks/useArticleReaderEvents';
 
-const DEFAULT_THUMBNAIL = '/default-thumbnail.png';
+import { DEFAULT_THUMBNAIL } from '@/lib/constants';
 
 interface CardBodyProps {
   article: Article;

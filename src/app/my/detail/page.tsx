@@ -6,32 +6,16 @@ import { useAuth } from '@/lib/auth/provider';
 import MemberModal from '@/components/auth/MemberModal';
 import { Icon } from '@/components/ui/Icon';
 import BackButton from '@/components/layout/BackButton';
-import { getAccessToken } from '@/lib/api/auth';
-import { decodeJwt } from 'jose';
-
-interface JwtPayload {
-  sub: string;
-  name: string;
-  birth: number;
-  email: string;
-}
+import { getJwtPayload } from '@/lib/jwt';
 
 export default function MyDetailPage() {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
   const showModal = !isLoggedIn;
-  const userInfo = useMemo(() => {
-    if (!isLoggedIn) return null;
-    const token = getAccessToken();
-    if (token) {
-      try {
-        return decodeJwt(token) as JwtPayload;
-      } catch {
-        // ignore
-      }
-    }
-    return null;
-  }, [isLoggedIn]);
+  const userInfo = useMemo(
+    () => (isLoggedIn ? getJwtPayload() : null),
+    [isLoggedIn],
+  );
 
   if (!isLoggedIn) {
     return (

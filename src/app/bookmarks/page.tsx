@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/provider';
@@ -11,26 +11,16 @@ import ArticleGrid from '@/components/grid/ArticleGrid';
 import { ArticlePreviewSheet } from '@/components/search/ArticlePreviewSheet';
 import { Icon } from '@/components/ui/Icon';
 import { Article } from '@/types/Article';
-import { getAccessToken } from '@/lib/api/auth';
-import { decodeJwt } from 'jose';
+import { getJwtClaim } from '@/lib/jwt';
 
 export default function BookmarksPage() {
   const { isLoggedIn } = useAuth();
   const { themeMode } = useTheme();
 
-  const userName = useMemo(() => {
-    if (!isLoggedIn) return '';
-    const token = getAccessToken();
-    if (token) {
-      try {
-        const decoded = decodeJwt(token) as { name?: string };
-        return decoded.name ?? '';
-      } catch {
-        // ignore
-      }
-    }
-    return '';
-  }, [isLoggedIn]);
+  const userName = useMemo(
+    () => (isLoggedIn ? getJwtClaim('name', '') : ''),
+    [isLoggedIn],
+  );
 
   const {
     data,
@@ -57,10 +47,6 @@ export default function BookmarksPage() {
   const articles = isLoggedIn ? serverArticles : localArticles;
 
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-
-  const handleArticleClick = useCallback((article: Article) => {
-    setSelectedArticle(article);
-  }, []);
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -164,15 +150,14 @@ export default function BookmarksPage() {
             loading={isLoggedIn ? isFetchingNextPage : false}
             onLoadMore={isLoggedIn ? handleLoadMore : undefined}
             hasMore={isLoggedIn ? !!hasNextPage : false}
-            onArticleClick={handleArticleClick}
+            onArticleClick={setSelectedArticle}
           />
         </>
       )}
 
       <ArticlePreviewSheet
         article={selectedArticle}
-        query=""
-        position={0}
+        source="bookmarks"
         onClose={() => setSelectedArticle(null)}
       />
     </main>

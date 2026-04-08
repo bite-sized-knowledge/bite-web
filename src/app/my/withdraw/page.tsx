@@ -7,9 +7,9 @@ import MemberModal from '@/components/auth/MemberModal';
 import Button from '@/components/ui/Button';
 import Checkbox from '@/components/ui/Checkbox';
 import BackButton from '@/components/layout/BackButton';
-import { withDraw, getAccessToken } from '@/lib/api/auth';
+import { withDraw } from '@/lib/api/auth';
 import { getApiBaseUrl } from '@/lib/api/baseUrl';
-import { decodeJwt } from 'jose';
+import { getJwtClaim } from '@/lib/jwt';
 
 const CONFIRMATIONS: string[] = [
   '탈퇴 후 계정 복구가 불가능합니다',
@@ -43,11 +43,8 @@ export default function WithdrawPage() {
 
     setLoading(true);
     try {
-      const token = getAccessToken();
-      if (!token) return;
-
-      const decoded = decodeJwt(token) as { sub: string };
-      const memberId = decoded.sub;
+      const memberId = getJwtClaim('sub', '');
+      if (!memberId) return;
 
       const result = await withDraw(memberId);
       if (result) {

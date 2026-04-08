@@ -6,26 +6,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import MemberModal from '@/components/auth/MemberModal';
 import { Icon } from '@/components/ui/Icon';
-import { getAccessToken } from '@/lib/api/auth';
-import { decodeJwt } from 'jose';
+import { getJwtClaim } from '@/lib/jwt';
 
 export default function MyPage() {
   const router = useRouter();
   const { isLoggedIn, logout } = useAuth();
   const showModal = !isLoggedIn;
-  const userName = useMemo(() => {
-    if (!isLoggedIn) return '';
-    const token = getAccessToken();
-    if (token) {
-      try {
-        const decoded = decodeJwt(token) as { name?: string };
-        return decoded.name ?? '';
-      } catch {
-        // ignore
-      }
-    }
-    return '';
-  }, [isLoggedIn]);
+  const userName = useMemo(
+    () => (isLoggedIn ? getJwtClaim('name', '') : ''),
+    [isLoggedIn],
+  );
 
   if (!isLoggedIn) {
     return (

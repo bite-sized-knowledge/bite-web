@@ -1,42 +1,23 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { createLocalStorage } from '@/lib/storage';
 
-const STORAGE_KEY = 'recentSearches';
 const MAX_ENTRIES = 10;
+const storage = createLocalStorage<string[]>('recentSearches', []);
 
-function readStorage(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((v): v is string => typeof v === 'string');
-  } catch {
-    return [];
-  }
-}
-
-function writeStorage(values: string[]) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
-  } catch {
-    // ignore
-  }
+function readValidated(): string[] {
+  const parsed = storage.read();
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter((v): v is string => typeof v === 'string');
 }
 
 export function useRecentSearches() {
   const [recent, setRecent] = useState<string[]>([]);
 
-  // Read from localStorage after mount to avoid SSR/hydration mismatch.
-  // Lazy useState init would run on the server with an empty store and on
-  // the client with the real store, which can desync server HTML from the
-  // first client render.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRecent(readStorage());
+    setRecent(readValidated());
   }, []);
 
   const add = useCallback((query: string) => {
@@ -45,7 +26,7 @@ export function useRecentSearches() {
     setRecent((prev) => {
       const deduped = [trimmed, ...prev.filter((q) => q !== trimmed)];
       const next = deduped.slice(0, MAX_ENTRIES);
-      writeStorage(next);
+      storage.write(next);
       return next;
     });
   }, []);
@@ -53,13 +34,13 @@ export function useRecentSearches() {
   const remove = useCallback((query: string) => {
     setRecent((prev) => {
       const next = prev.filter((q) => q !== query);
-      writeStorage(next);
+      storage.write(next);
       return next;
     });
   }, []);
 
   const clear = useCallback(() => {
-    writeStorage([]);
+    storage.clear();
     setRecent([]);
   }, []);
 

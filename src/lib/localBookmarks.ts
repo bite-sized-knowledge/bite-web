@@ -1,20 +1,25 @@
 import { Article } from '@/types/Article';
 import * as articleApi from '@/lib/api/article';
+import { createLocalStorage } from './storage';
 
-const STORAGE_KEY = 'bite_local_bookmarks';
+const storage = createLocalStorage<Record<string, Article>>('bite_local_bookmarks', {});
+
+// Module-level cache to avoid repeated JSON.parse on every CardFooter mount.
+let cache: Record<string, Article> | null = null;
 
 function read(): Record<string, Article> {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+  if (cache) return cache;
+  cache = storage.read();
+  return cache;
 }
 
 function write(data: Record<string, Article>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  cache = data;
+  storage.write(data);
+}
+
+function invalidate() {
+  cache = null;
 }
 
 export function isLocallyBookmarked(articleId: string): boolean {
@@ -22,13 +27,13 @@ export function isLocallyBookmarked(articleId: string): boolean {
 }
 
 export function addLocalBookmark(article: Article) {
-  const data = read();
+  const data = { ...read() };
   data[article.id] = { ...article, isArchived: true };
   write(data);
 }
 
 export function removeLocalBookmark(articleId: string) {
-  const data = read();
+  const data = { ...read() };
   delete data[articleId];
   write(data);
 }
@@ -42,18 +47,30 @@ export function getLocalBookmarkIds(): string[] {
 }
 
 export function clearLocalBookmarks() {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEY);
+  storage.clear();
+  invalidate();
 }
 
 /**
  * Sync local bookmarks to the server after login/signup.
- * Fire-and-forget — failures are silently ignored.
+ * Only clears bookmarks that were successfully synced.
  */
 export function syncLocalBookmarksToServer() {
   const ids = getLocalBookmarkIds();
   if (ids.length === 0) return;
-  Promise.allSettled(ids.map((id) => articleApi.addBookmark(id))).then(() => {
-    clearLocalBookmarks();
-  });
+  Promise.allSettled(ids.map((id) => articleApi.addBookmark(id))).then(
+    (results) => {
+      const data = { ...read() };
+      results.forEach((result, i) => {
+        if (result.status === 'fulfilled') {
+          delete data[ids[i]];
+        }
+      });
+      if (Object.keys(data).length === 0) {
+        clearLocalBookmarks();
+      } else {
+        write(data);
+      }
+    },
+  );
 }

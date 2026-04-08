@@ -2,17 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { decodeJwt } from 'jose';
 import { useAuth } from '@/lib/auth/provider';
 import MemberModal from '@/components/auth/MemberModal';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { ArrowLeftIcon } from '@/components/icons/TabIcons';
-import {
-  changePassword,
-  getAccessToken,
-  passwordMatch,
-} from '@/lib/api/auth';
+import { changePassword, passwordMatch } from '@/lib/api/auth';
+import { getJwtClaim } from '@/lib/jwt';
 
 import { PASSWORD_REGEX, PASSWORD_HINT } from '@/lib/validation';
 
@@ -23,18 +19,10 @@ export default function ChangePasswordPage() {
   const { isLoggedIn, logout } = useAuth();
   const [showModal, setShowModal] = useState(false);
 
-  // Pull user email from JWT so we can re-authenticate against /v1/auth/login
-  const userEmail = useMemo(() => {
-    if (!isLoggedIn) return '';
-    const token = getAccessToken();
-    if (!token) return '';
-    try {
-      const decoded = decodeJwt(token) as { email?: string; sub?: string };
-      return decoded.email ?? decoded.sub ?? '';
-    } catch {
-      return '';
-    }
-  }, [isLoggedIn]);
+  const userEmail = useMemo(
+    () => (isLoggedIn ? (getJwtClaim('email', '') || getJwtClaim('sub', '')) : ''),
+    [isLoggedIn],
+  );
 
   const [step, setStep] = useState<Step>('verify');
   const [currentPassword, setCurrentPassword] = useState('');

@@ -13,22 +13,26 @@ const DRAG_CLOSE_THRESHOLD = 80;
 
 interface ArticlePreviewSheetProps {
   article: Article | null;
-  query: string;
-  position: number;
+  query?: string;
+  position?: number;
+  source?: 'search' | 'bookmarks';
   onClose: () => void;
 }
 
 function SheetContent({
   article,
-  query,
-  position,
+  query = '',
+  position = 0,
+  source = 'search',
   onClose,
 }: {
   article: Article;
-  query: string;
-  position: number;
+  query?: string;
+  position?: number;
+  source?: 'search' | 'bookmarks';
   onClose: () => void;
 }) {
+  const isSearch = source === 'search';
   const openedAtRef = useRef(Date.now());
   const articleOpenedRef = useRef(false);
 
@@ -41,21 +45,23 @@ function SheetContent({
     };
   }, []);
 
-  // S_PREVIEW: fire on mount
+  // S_PREVIEW: fire on mount (search only)
   useEffect(() => {
     openedAtRef.current = Date.now();
     articleOpenedRef.current = false;
-    sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.S_PREVIEW, {
-      source: 'search',
-      position,
-      metadata: { query },
-    });
-  }, [article.id, query, position]);
+    if (isSearch) {
+      sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.S_PREVIEW, {
+        source: 'search',
+        position,
+        metadata: { query },
+      });
+    }
+  }, [article.id, query, position, isSearch]);
 
-  // S_PREVIEW_DISMISS: fire on unmount if article was NOT opened
+  // S_PREVIEW_DISMISS: fire on unmount if article was NOT opened (search only)
   useEffect(() => {
     return () => {
-      if (!articleOpenedRef.current) {
+      if (isSearch && !articleOpenedRef.current) {
         const duration = Date.now() - openedAtRef.current;
         sendEvent(
           TARGET_TYPE.ARTICLE,
@@ -73,15 +79,17 @@ function SheetContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Capture click on CardBody area to fire S_CLICK
+  // Capture click on CardBody area to fire S_CLICK (search only)
   const handleContentClick = () => {
     articleOpenedRef.current = true;
-    sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.S_CLICK, {
-      source: 'search',
-      dwellTimeMs: Date.now() - openedAtRef.current,
-      position,
-      metadata: { query },
-    });
+    if (isSearch) {
+      sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.S_CLICK, {
+        source: 'search',
+        dwellTimeMs: Date.now() - openedAtRef.current,
+        position,
+        metadata: { query },
+      });
+    }
   };
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
@@ -135,6 +143,7 @@ export function ArticlePreviewSheet({
   article,
   query,
   position,
+  source,
   onClose,
 }: ArticlePreviewSheetProps) {
   if (typeof window === 'undefined') return null;
@@ -147,6 +156,7 @@ export function ArticlePreviewSheet({
           article={article}
           query={query}
           position={position}
+          source={source}
           onClose={onClose}
         />
       )}

@@ -8,7 +8,7 @@ import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
 import { HighlightMatch } from './HighlightMatch';
 import { Icon } from '@/components/ui/Icon';
 
-const DEFAULT_THUMBNAIL = '/default-thumbnail.png';
+import { DEFAULT_THUMBNAIL } from '@/lib/constants';
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
