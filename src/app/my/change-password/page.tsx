@@ -83,7 +83,8 @@ export default function ChangePasswordPage() {
 
   return (
     <main className="min-h-svh bg-[var(--color-bg)]">
-      <header className="flex items-center h-[var(--header-height)] px-4 gap-3">
+      <div className="my-page-container">
+        <header className="flex items-center h-[var(--header-height)] px-4 gap-3">
         <button
           type="button"
           onClick={() => {
@@ -160,6 +161,7 @@ export default function ChangePasswordPage() {
             </Button>
           </>
         )}
+      </div>
       </div>
     </main>
   );

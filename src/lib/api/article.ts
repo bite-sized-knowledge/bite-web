@@ -68,6 +68,23 @@ export const getHistory = async (
   return data;
 };
 
+export const getLikedArticles = async (
+  context: QueryFunctionContext<
+    readonly ['likes'],
+    string | null
+  >,
+) => {
+  const { pageParam } = context;
+
+  let url = `/v1/articles/likes?limit=${ROWS_PER_PAGE}`;
+  if (pageParam) {
+    url += `&from=${pageParam}`;
+  }
+
+  const { data } = await api.get<{ articles: Article[]; next: string | null }>(url);
+  return data;
+};
+
 export const searchArticles = async (
   query: string,
   signal?: AbortSignal,

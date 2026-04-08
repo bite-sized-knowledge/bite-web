@@ -38,7 +38,7 @@ export default function MiniCard({
 }: MiniCardProps) {
   const { openArticle } = useArticleReaderEvents();
   const thumbnail =
-    article.thumbnail || article.category?.thumbnail || article.category?.image || DEFAULT_THUMBNAIL;
+    article.thumbnail || DEFAULT_THUMBNAIL;
   const [imgSrc, setImgSrc] = useState(thumbnail);
   const [faviconSrc, setFaviconSrc] = useState(article.blog?.favicon || DEFAULT_THUMBNAIL);
 

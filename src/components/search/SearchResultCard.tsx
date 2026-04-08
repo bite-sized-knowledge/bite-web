@@ -57,10 +57,7 @@ export function SearchResultCard({ article, query, position, onSelect }: SearchR
   }, [article.id, position, query]);
 
   const thumbnail =
-    article.thumbnail ||
-    article.category?.thumbnail ||
-    article.category?.image ||
-    DEFAULT_THUMBNAIL;
+    article.thumbnail || DEFAULT_THUMBNAIL;
   const [imgSrc, setImgSrc] = useState(thumbnail);
 
   const handleClick = () => {

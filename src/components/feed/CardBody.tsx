@@ -12,7 +12,7 @@ interface CardBodyProps {
 
 export const CardBody: React.FC<CardBodyProps> = ({ article }) => {
   const thumbnail =
-    article.thumbnail || article.category?.thumbnail || DEFAULT_THUMBNAIL;
+    article.thumbnail || DEFAULT_THUMBNAIL;
   const [imgSrc, setImgSrc] = useState(thumbnail);
   const { openArticle } = useArticleReaderEvents();
 

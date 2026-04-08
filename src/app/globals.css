@@ -483,6 +483,91 @@ body {
 }
 
 /* =============================================
+   My Page — desktop layout
+
+   Mobile: full-width list layout (unchanged).
+   Desktop: 2-column grid — left content + right branding area.
+   Menu items grouped inside visual cards with rounded corners.
+   ============================================= */
+.my-page-layout {
+  width: 100%;
+}
+
+.my-page-container {}
+
+.my-page-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 28px 20px;
+  margin: 0 16px 24px;
+  background: var(--color-card-bg);
+  border-radius: var(--card-radius);
+  border: 1px solid var(--color-divider);
+  text-align: center;
+}
+
+.my-avatar {
+  height: 48px;
+  width: 48px;
+}
+
+@media (min-width: 820px) and (orientation: landscape) {
+  .my-page-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    padding: 24px 48px 48px;
+    align-items: start;
+  }
+
+  .my-page-container {
+    max-width: 800px;
+    padding: 24px 48px 48px;
+  }
+
+  .my-page-aside {
+    margin: 48px 0 0;
+    padding: 48px 32px;
+    gap: 20px;
+    min-height: 360px;
+    justify-content: center;
+  }
+
+  .my-avatar {
+    height: 64px;
+    width: 64px;
+  }
+
+  /* Profile card: avatar + name area */
+  .my-profile-section {
+    background: var(--color-card-bg);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--color-divider);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  /* Grouped menu card */
+  .my-menu-group {
+    background: var(--color-card-bg);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--color-divider);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .my-menu-group > button,
+  .my-menu-group > div {
+    border-color: var(--color-divider);
+  }
+  .my-menu-group > :last-child {
+    border-bottom: none;
+  }
+}
+
+/* =============================================
    Search highlight
    ============================================= */
 .search-highlight {

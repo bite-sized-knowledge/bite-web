@@ -75,6 +75,7 @@ export default function WithdrawPage() {
 
   return (
     <main className="min-h-svh bg-[var(--color-bg)]">
+      <div className="my-page-container">
       {/* Header */}
       <header className="flex items-center h-[var(--header-height)] px-4 gap-3">
         <BackButton href="/my/detail" />
@@ -109,6 +110,7 @@ export default function WithdrawPage() {
         >
           탈퇴하기
         </Button>
+      </div>
       </div>
     </main>
   );

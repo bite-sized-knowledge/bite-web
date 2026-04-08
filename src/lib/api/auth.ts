@@ -212,6 +212,15 @@ export const resetPassword = async (email: string) => {
   }
 };
 
+export const updateProfile = async (params: { name?: string; birth?: number }) => {
+  const { data, error } = await api.put<IToken>('/v1/members/profile', params);
+  if (!error && data) {
+    localStorage.setItem('accessToken', data.token.accessToken);
+    return true;
+  }
+  return false;
+};
+
 // OAuth endpoints
 export const oauthGithub = async (code: string) => {
   try {
