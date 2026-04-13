@@ -229,9 +229,8 @@ body {
 .feed-floating-btn {
   position: fixed;
   z-index: 100;
-  bottom: calc(var(--tabbar-height) + 64px);
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: calc(var(--tabbar-height) + 16px);
+  right: 16px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -251,18 +250,13 @@ body {
 
 .feed-floating-btn:active {
   opacity: 0.9;
-  transform: translateX(-50%) scale(0.97);
+  transform: scale(0.97);
 }
 
 @media (min-width: 820px) and (orientation: landscape) {
   .feed-floating-btn {
     bottom: 32px;
-    left: auto;
     right: 32px;
-    transform: none;
-  }
-  .feed-floating-btn:active {
-    transform: scale(0.97);
   }
 }
 
