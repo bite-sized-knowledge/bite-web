@@ -1,21 +1,17 @@
 'use client';
 
-import { useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import MemberModal from '@/components/auth/MemberModal';
 import { Icon } from '@/components/ui/Icon';
-import { getJwtPayload } from '@/lib/jwt';
+import { useMemberProfile } from '@/hooks/useMemberProfile';
 
 export default function MyPage() {
   const router = useRouter();
   const { isLoggedIn, logout } = useAuth();
   const showModal = !isLoggedIn;
-  const userInfo = useMemo(
-    () => (isLoggedIn ? getJwtPayload() : null),
-    [isLoggedIn],
-  );
+  const { profile: userInfo } = useMemberProfile();
 
   if (!isLoggedIn) {
     return (

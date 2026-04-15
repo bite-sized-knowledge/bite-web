@@ -1,13 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import MemberModal from '@/components/auth/MemberModal';
 import { Icon } from '@/components/ui/Icon';
 import BackButton from '@/components/layout/BackButton';
-import { getJwtPayload } from '@/lib/jwt';
 import { updateProfile } from '@/lib/api/auth';
+import { useMemberProfile, useInvalidateProfile } from '@/hooks/useMemberProfile';
 
 type EditField = 'name' | 'birth' | null;
 
@@ -16,12 +16,8 @@ export default function MyDetailPage() {
   const { isLoggedIn } = useAuth();
   const showModal = !isLoggedIn;
 
-  const [profileVersion, setProfileVersion] = useState(0);
-  const userInfo = useMemo(
-    () => (isLoggedIn ? getJwtPayload() : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isLoggedIn, profileVersion],
-  );
+  const { profile: userInfo } = useMemberProfile();
+  const invalidateProfile = useInvalidateProfile();
 
   const [editField, setEditField] = useState<EditField>(null);
   const [editValue, setEditValue] = useState('');
@@ -59,7 +55,7 @@ export default function MyDetailPage() {
     try {
       const ok = await updateProfile({ name });
       if (ok) {
-        setProfileVersion((v) => v + 1);
+        invalidateProfile();
         setEditField(null);
       } else {
         setError('변경에 실패했습니다.');
@@ -69,7 +65,7 @@ export default function MyDetailPage() {
     } finally {
       setSaving(false);
     }
-  }, [editValue, userInfo?.name, cancelEdit]);
+  }, [editValue, userInfo?.name, cancelEdit, invalidateProfile]);
 
   const saveBirth = useCallback(async () => {
     const year = parseInt(editValue, 10);
@@ -91,7 +87,7 @@ export default function MyDetailPage() {
     try {
       const ok = await updateProfile({ birth: year });
       if (ok) {
-        setProfileVersion((v) => v + 1);
+        invalidateProfile();
         setEditField(null);
       } else {
         setError('변경에 실패했습니다.');
@@ -101,7 +97,7 @@ export default function MyDetailPage() {
     } finally {
       setSaving(false);
     }
-  }, [editValue, userInfo?.birth, cancelEdit]);
+  }, [editValue, userInfo?.birth, cancelEdit, invalidateProfile]);
 
   if (!isLoggedIn) {
     return (

@@ -11,16 +11,13 @@ import ArticleGrid from '@/components/grid/ArticleGrid';
 import { ArticlePreviewSheet } from '@/components/search/ArticlePreviewSheet';
 import { Icon } from '@/components/ui/Icon';
 import { Article } from '@/types/Article';
-import { getJwtClaim } from '@/lib/jwt';
+import { useMemberProfile } from '@/hooks/useMemberProfile';
 
 export default function BookmarksPage() {
   const { isLoggedIn } = useAuth();
   const { themeMode } = useTheme();
-
-  const userName = useMemo(
-    () => (isLoggedIn ? getJwtClaim('name', '') : ''),
-    [isLoggedIn],
-  );
+  const { profile } = useMemberProfile();
+  const userName = profile?.name ?? '';
 
   const {
     data,

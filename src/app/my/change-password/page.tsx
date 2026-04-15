@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import MemberModal from '@/components/auth/MemberModal';
@@ -8,7 +8,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { ArrowLeftIcon } from '@/components/icons/TabIcons';
 import { changePassword, passwordMatch } from '@/lib/api/auth';
-import { getJwtClaim } from '@/lib/jwt';
+import { useMemberProfile } from '@/hooks/useMemberProfile';
 
 import { PASSWORD_REGEX, PASSWORD_HINT } from '@/lib/validation';
 
@@ -18,11 +18,8 @@ export default function ChangePasswordPage() {
   const router = useRouter();
   const { isLoggedIn, logout } = useAuth();
   const [showModal, setShowModal] = useState(false);
-
-  const userEmail = useMemo(
-    () => (isLoggedIn ? (getJwtClaim('email', '') || getJwtClaim('sub', '')) : ''),
-    [isLoggedIn],
-  );
+  const { profile } = useMemberProfile();
+  const userEmail = profile?.email ?? '';
 
   const [step, setStep] = useState<Step>('verify');
   const [currentPassword, setCurrentPassword] = useState('');

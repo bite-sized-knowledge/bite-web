@@ -221,6 +221,21 @@ export const updateProfile = async (params: { name?: string; birth?: number }) =
   return false;
 };
 
+export interface MemberProfile {
+  member_id: number;
+  email: string;
+  name: string;
+  birth: number | null;
+  gender: string;
+  status: string;
+  role: string;
+}
+
+export const getMyProfile = async (): Promise<MemberProfile | null> => {
+  const { data } = await api.get<MemberProfile>('/v1/members/me');
+  return data;
+};
+
 // OAuth endpoints
 export const oauthGithub = async (code: string) => {
   try {

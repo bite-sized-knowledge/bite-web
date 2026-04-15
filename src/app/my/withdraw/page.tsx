@@ -9,7 +9,7 @@ import Checkbox from '@/components/ui/Checkbox';
 import BackButton from '@/components/layout/BackButton';
 import { withDraw } from '@/lib/api/auth';
 import { getApiBaseUrl } from '@/lib/api/baseUrl';
-import { getJwtClaim } from '@/lib/jwt';
+import { useMemberProfile } from '@/hooks/useMemberProfile';
 
 const CONFIRMATIONS: string[] = [
   '탈퇴 후 계정 복구가 불가능합니다',
@@ -20,6 +20,7 @@ const CONFIRMATIONS: string[] = [
 export default function WithdrawPage() {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
+  const { profile } = useMemberProfile();
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checks, setChecks] = useState<boolean[]>(
@@ -43,7 +44,7 @@ export default function WithdrawPage() {
 
     setLoading(true);
     try {
-      const memberId = getJwtClaim('sub', '');
+      const memberId = profile?.member_id ? String(profile.member_id) : '';
       if (!memberId) return;
 
       const result = await withDraw(memberId);
