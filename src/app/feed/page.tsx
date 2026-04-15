@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { FeedHeader } from '@/components/feed/FeedHeader';
 import { FeedContainer } from '@/components/feed/FeedContainer';
-import { useFeedData } from '@/hooks/useFeedData';
+import { BlogSelectSheet } from '@/components/feed/BlogSelectSheet';
+import { useFeedData, type FeedFilter } from '@/hooks/useFeedData';
+import { getBlogs, type BlogResponse } from '@/lib/api/blog';
 import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay';
 
 type TabType = 'latest' | 'recommend';
@@ -18,6 +21,24 @@ const variants = {
 export default function FeedPage() {
   const [selectedTab, setSelectedTab] = useState<TabType>('latest');
   const [direction, setDirection] = useState(0);
+  const [filter, setFilter] = useState<FeedFilter>({ type: 'all' });
+  const [blogSheetOpen, setBlogSheetOpen] = useState(false);
+
+  const { data: blogs = [] } = useQuery({
+    queryKey: ['blogs'],
+    queryFn: getBlogs,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const selectedBlog = useMemo(() => {
+    if (filter.type !== 'blog') return null;
+    return blogs.find((b) => b.id === filter.blogId) ?? null;
+  }, [filter, blogs]);
+
+  const handleBlogSelect = (blog: BlogResponse) => {
+    setFilter({ type: 'blog', blogId: blog.id });
+  };
+
   const {
     articles,
     isLoading,
@@ -27,7 +48,7 @@ export default function FeedPage() {
     getNextData,
     removeArticle,
     refresh,
-  } = useFeedData(selectedTab);
+  } = useFeedData(selectedTab, filter);
 
   const handleTabChange = (tab: TabType) => {
     if (tab === selectedTab) return;
@@ -48,7 +69,20 @@ export default function FeedPage() {
   return (
     <main className="feed-main">
       <OnboardingOverlay />
-      <FeedHeader selectedTab={selectedTab} onTabChange={handleTabChange} />
+      <FeedHeader
+        selectedTab={selectedTab}
+        onTabChange={handleTabChange}
+        filter={filter}
+        onFilterChange={setFilter}
+        selectedBlog={selectedBlog}
+        onOpenBlogSheet={() => setBlogSheetOpen(true)}
+      />
+      <BlogSelectSheet
+        open={blogSheetOpen}
+        blogs={blogs}
+        onSelect={handleBlogSelect}
+        onClose={() => setBlogSheetOpen(false)}
+      />
       <AnimatePresence mode="wait" custom={direction} initial={false}>
         <motion.div
           key={selectedTab}

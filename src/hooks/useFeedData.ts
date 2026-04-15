@@ -1,11 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback, useReducer } from 'react';
+import { useState, useEffect, useCallback, useReducer, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getRecommendedFeed, getRecentFeed } from '@/lib/api/feed';
 import { Article } from '@/types/Article';
 
 type TabType = 'latest' | 'recommend';
+
+export type FeedFilter =
+  | { type: 'all' }
+  | { type: 'lang'; value: 'ko' | 'en' }
+  | { type: 'blog'; blogId: string };
 
 function mergeWithoutDuplicates(prev: Article[], next: Article[]): Article[] {
   const ids = new Set(prev.map((a) => a.id));
@@ -35,11 +40,34 @@ function articleReducer(state: Article[], action: ArticleAction): Article[] {
   }
 }
 
-export function useFeedData(selectedTab: TabType) {
+export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: 'all' }) {
   const [recommendedArticles, dispatchRecommended] = useReducer(articleReducer, []);
   const [recentArticles, dispatchRecent] = useReducer(articleReducer, []);
   const [fetchMoreRequested, setFetchMoreRequested] = useState(false);
   const [from, setFrom] = useState<string | null>(null);
+
+  // Derive lang/blogId from filter for API calls
+  const lang = filter.type === 'lang' ? filter.value : null;
+  const blogId = filter.type === 'blog' ? filter.blogId : null;
+  const filterKey = filter.type === 'all' ? 'all' : filter.type === 'lang' ? `lang:${filter.value}` : `blog:${filter.blogId}`;
+
+  // Track filter version to force refetch after reset
+  const [filterVersion, setFilterVersion] = useState(0);
+
+  // Reset recent articles when filter changes
+  const prevFilterKey = useRef(filterKey);
+  useEffect(() => {
+    if (prevFilterKey.current !== filterKey) {
+      prevFilterKey.current = filterKey;
+      dispatchRecent({ type: 'reset' });
+      setFrom(null);
+      setFetchMoreRequested(false);
+      // Increment version — this batches with setFrom(null), so both
+      // commit in the same render. The query effect below sees
+      // from=null + new filterKey + new version → correct refetch.
+      setFilterVersion((v) => v + 1);
+    }
+  }, [filterKey]);
 
   // Recommended feed
   const {
@@ -55,7 +83,12 @@ export function useFeedData(selectedTab: TabType) {
     enabled: false,
   });
 
-  // Recent feed
+  // Suppress auto-fetch during the transitional render where filterKey
+  // has changed but from/filterVersion haven't been reset yet.
+  const isResetting = prevFilterKey.current !== filterKey;
+
+  // Recent feed — queryKey includes filterVersion so react-query
+  // sees a new key after filter reset and refetches automatically.
   const {
     data: recentFeedData,
     isLoading: isRecentLoading,
@@ -64,9 +97,9 @@ export function useFeedData(selectedTab: TabType) {
     error: recentError,
     refetch: refetchRecent,
   } = useQuery({
-    queryKey: ['recentFeed', from],
-    queryFn: () => getRecentFeed(from),
-    enabled: false,
+    queryKey: ['recentFeed', from, filter, filterVersion],
+    queryFn: () => getRecentFeed(from, lang, blogId),
+    enabled: selectedTab === 'latest' && !isResetting,
   });
 
   // Derive isFetchingMore from request state and fetching state
@@ -93,11 +126,10 @@ export function useFeedData(selectedTab: TabType) {
     }
   }, [recentFeedData, isRecentFetching]);
 
-  // Initial data load
+  // Initial load for recommended feed
   useEffect(() => {
-    refetchRecent();
     refetchRecommended();
-  }, [refetchRecent, refetchRecommended]);
+  }, [refetchRecommended]);
 
   // Refetch recommended when switching to recommend tab
   useEffect(() => {
@@ -106,13 +138,6 @@ export function useFeedData(selectedTab: TabType) {
       refetchRecommended();
     }
   }, [selectedTab, refetchRecommended]);
-
-  // Refetch recent when `from` changes
-  useEffect(() => {
-    if (from !== null) {
-      refetchRecent();
-    }
-  }, [from, refetchRecent]);
 
   const getNextData = useCallback(() => {
     if (isFetchingMore) return;
@@ -154,14 +179,13 @@ export function useFeedData(selectedTab: TabType) {
       dispatchRecent({ type: 'reset' });
       setFrom(null);
       setFetchMoreRequested(false);
-      // Small delay to let state flush before refetch
-      setTimeout(() => refetchRecent(), 0);
+      setFilterVersion((v) => v + 1);
     } else {
       dispatchRecommended({ type: 'reset' });
       setFetchMoreRequested(false);
       setTimeout(() => refetchRecommended(), 0);
     }
-  }, [selectedTab, refetchRecent, refetchRecommended]);
+  }, [selectedTab, refetchRecommended]);
 
   return {
     articles,

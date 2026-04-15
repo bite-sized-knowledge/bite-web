@@ -16,6 +16,15 @@ interface BlogArticleResponse {
 
 export type BlogResponse = BlogDetail;
 
+interface ListBlogsResponse {
+  blogs: BlogDetail[];
+}
+
+export const getBlogs = async () => {
+  const { data } = await api.get<ListBlogsResponse>('/v1/blogs');
+  return data?.blogs ?? [];
+};
+
 export const getBlog = async (blogId: string) => {
   const data = await api.get<BlogResponse>(`/v1/blogs/${blogId}`);
   return data;

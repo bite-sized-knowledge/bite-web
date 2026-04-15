@@ -87,20 +87,35 @@ export class ApiClient {
 
       // 만약 토큰이 만료되었을 경우 (401 Unauthorized), 리프레시 토큰으로 새로운 액세스 토큰을 발급받고 다시 요청
       if (authRequired && response.status === 401 && !hasRetried) {
-        const newAccessToken = await refreshAccessToken();
-
-        return this.request<T>(
-          endpoint,
-          {
-            ...options,
-            headers: {
-              ...headers,
-              Authorization: `Bearer ${newAccessToken}`,
-            },
-          },
-          authRequired,
-          true,
-        );
+        try {
+          const newAccessToken = await refreshAccessToken();
+          if (newAccessToken) {
+            return this.request<T>(
+              endpoint,
+              {
+                ...options,
+                headers: {
+                  ...headers,
+                  Authorization: `Bearer ${newAccessToken}`,
+                },
+              },
+              authRequired,
+              true,
+            );
+          }
+        } catch {
+          // Refresh failed (expired/invalid refresh token) — clear session and redirect to login
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('interestIds');
+            window.location.href = '/auth/login';
+          }
+          return {
+            data: null,
+            error: new Error('세션이 만료되었습니다. 다시 로그인해주세요.'),
+            status: false,
+          };
+        }
       }
 
       if (response.status === 204) {
