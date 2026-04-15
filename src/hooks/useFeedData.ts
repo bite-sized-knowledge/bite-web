@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useReducer, useRef } from 'react';
+import { useState, useEffect, useCallback, useReducer } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getRecommendedFeed, getRecentFeed } from '@/lib/api/feed';
 import { Article } from '@/types/Article';
@@ -51,23 +51,22 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
   const blogId = filter.type === 'blog' ? filter.blogId : null;
   const filterKey = filter.type === 'all' ? 'all' : filter.type === 'lang' ? `lang:${filter.value}` : `blog:${filter.blogId}`;
 
-  // Track filter version to force refetch after reset
-  const [filterVersion, setFilterVersion] = useState(0);
+  // `committedFilterKey` lags behind `filterKey` by one render.  During the
+  // transitional render where filterKey has changed but from hasn't been
+  // reset, they differ → `enabled` stays false → no stale fetch.  Once the
+  // effect below commits the reset, committedFilterKey catches up and the
+  // query auto-fetches with the correct from=null + new filter.
+  const [committedFilterKey, setCommittedFilterKey] = useState(filterKey);
 
   // Reset recent articles when filter changes
-  const prevFilterKey = useRef(filterKey);
   useEffect(() => {
-    if (prevFilterKey.current !== filterKey) {
-      prevFilterKey.current = filterKey;
+    if (committedFilterKey !== filterKey) {
       dispatchRecent({ type: 'reset' });
       setFrom(null);
       setFetchMoreRequested(false);
-      // Increment version — this batches with setFrom(null), so both
-      // commit in the same render. The query effect below sees
-      // from=null + new filterKey + new version → correct refetch.
-      setFilterVersion((v) => v + 1);
+      setCommittedFilterKey(filterKey);
     }
-  }, [filterKey]);
+  }, [filterKey, committedFilterKey]);
 
   // Recommended feed
   const {
@@ -83,12 +82,9 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
     enabled: false,
   });
 
-  // Suppress auto-fetch during the transitional render where filterKey
-  // has changed but from/filterVersion haven't been reset yet.
-  const isResetting = prevFilterKey.current !== filterKey;
-
-  // Recent feed — queryKey includes filterVersion so react-query
-  // sees a new key after filter reset and refetches automatically.
+  // Recent feed — enabled only after filter reset has committed
+  // (committedFilterKey === filterKey). During the transitional render
+  // they differ, suppressing the stale fetch.
   const {
     data: recentFeedData,
     isLoading: isRecentLoading,
@@ -97,9 +93,9 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
     error: recentError,
     refetch: refetchRecent,
   } = useQuery({
-    queryKey: ['recentFeed', from, filter, filterVersion],
+    queryKey: ['recentFeed', from, filter, committedFilterKey],
     queryFn: () => getRecentFeed(from, lang, blogId),
-    enabled: selectedTab === 'latest' && !isResetting,
+    enabled: selectedTab === 'latest' && committedFilterKey === filterKey,
   });
 
   // Derive isFetchingMore from request state and fetching state
@@ -179,13 +175,13 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
       dispatchRecent({ type: 'reset' });
       setFrom(null);
       setFetchMoreRequested(false);
-      setFilterVersion((v) => v + 1);
+      setTimeout(() => refetchRecent(), 0);
     } else {
       dispatchRecommended({ type: 'reset' });
       setFetchMoreRequested(false);
       setTimeout(() => refetchRecommended(), 0);
     }
-  }, [selectedTab, refetchRecommended]);
+  }, [selectedTab, refetchRecent, refetchRecommended]);
 
   return {
     articles,
