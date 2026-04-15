@@ -706,7 +706,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   const showingSkeletons = (isLoading || isRefreshing) && totalItems === 0;
 
   return (
-    <>
+    <div className="feed-peek-wrapper">
       <div
         className="feed-scroll-area"
         ref={scrollElRef}
@@ -734,6 +734,12 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
           </div>
         )}
       </div>
+      {currentIndex > 0 && (
+        <div className="feed-peek-hint feed-peek-hint-top" />
+      )}
+      {currentIndex < maxIndex && (
+        <div className="feed-peek-hint feed-peek-hint-bottom" />
+      )}
       <AnimatePresence>
         {showResumeButton && !isResuming && (
           <ResumeReadingButton
@@ -750,6 +756,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
           />
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 };
