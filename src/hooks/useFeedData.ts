@@ -40,33 +40,59 @@ function articleReducer(state: Article[], action: ArticleAction): Article[] {
   }
 }
 
+function filterKey(filter: FeedFilter): string {
+  if (filter.type === 'all') return 'all';
+  if (filter.type === 'lang') return `lang:${filter.value}`;
+  return `blog:${filter.blogId}`;
+}
+
+// Bundles cursor + filter into one reducer so filter changes atomically
+// reset `from` without needing setState-in-effect.
+interface CursorState {
+  from: string | null;
+  activeFilterKey: string;
+}
+
+type CursorAction =
+  | { type: 'next'; from: string }
+  | { type: 'reset' }
+  | { type: 'filterChanged'; filterKey: string };
+
+function cursorReducer(state: CursorState, action: CursorAction): CursorState {
+  switch (action.type) {
+    case 'next':
+      return { ...state, from: action.from };
+    case 'reset':
+      return { ...state, from: null };
+    case 'filterChanged':
+      if (state.activeFilterKey === action.filterKey) return state;
+      return { from: null, activeFilterKey: action.filterKey };
+  }
+}
+
 export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: 'all' }) {
   const [recommendedArticles, dispatchRecommended] = useReducer(articleReducer, []);
   const [recentArticles, dispatchRecent] = useReducer(articleReducer, []);
   const [fetchMoreRequested, setFetchMoreRequested] = useState(false);
-  const [from, setFrom] = useState<string | null>(null);
 
-  // Derive lang/blogId from filter for API calls
   const lang = filter.type === 'lang' ? filter.value : null;
   const blogId = filter.type === 'blog' ? filter.blogId : null;
-  const filterKey = filter.type === 'all' ? 'all' : filter.type === 'lang' ? `lang:${filter.value}` : `blog:${filter.blogId}`;
+  const fKey = filterKey(filter);
 
-  // `committedFilterKey` lags behind `filterKey` by one render.  During the
-  // transitional render where filterKey has changed but from hasn't been
-  // reset, they differ → `enabled` stays false → no stale fetch.  Once the
-  // effect below commits the reset, committedFilterKey catches up and the
-  // query auto-fetches with the correct from=null + new filter.
-  const [committedFilterKey, setCommittedFilterKey] = useState(filterKey);
+  // Cursor reducer: when filterKey changes, `from` resets to null in the
+  // SAME render — no effect needed, no transitional render with stale from.
+  const [cursor, dispatchCursor] = useReducer(cursorReducer, {
+    from: null,
+    activeFilterKey: fKey,
+  });
 
-  // Reset recent articles when filter changes
-  useEffect(() => {
-    if (committedFilterKey !== filterKey) {
-      dispatchRecent({ type: 'reset' });
-      setFrom(null);
-      setFetchMoreRequested(false);
-      setCommittedFilterKey(filterKey);
-    }
-  }, [filterKey, committedFilterKey]);
+  // Synchronous dispatch during render when filter changes — this is safe
+  // because it only fires when the filter prop actually changes, producing
+  // the same result for the same input (idempotent).
+  if (cursor.activeFilterKey !== fKey) {
+    dispatchCursor({ type: 'filterChanged', filterKey: fKey });
+    dispatchRecent({ type: 'reset' });
+  }
 
   // Recommended feed
   const {
@@ -82,9 +108,9 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
     enabled: false,
   });
 
-  // Recent feed — enabled only after filter reset has committed
-  // (committedFilterKey === filterKey). During the transitional render
-  // they differ, suppressing the stale fetch.
+  // Recent feed — auto-fetches when queryKey changes (cursor.from or filter).
+  // `cursor.activeFilterKey` stays in sync with `fKey` after the dispatch
+  // above, so `enabled` is true in the same render where from was reset.
   const {
     data: recentFeedData,
     isLoading: isRecentLoading,
@@ -93,9 +119,9 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
     error: recentError,
     refetch: refetchRecent,
   } = useQuery({
-    queryKey: ['recentFeed', from, filter, committedFilterKey],
-    queryFn: () => getRecentFeed(from, lang, blogId),
-    enabled: selectedTab === 'latest' && committedFilterKey === filterKey,
+    queryKey: ['recentFeed', cursor.from, filter],
+    queryFn: () => getRecentFeed(cursor.from, lang, blogId),
+    enabled: selectedTab === 'latest' && cursor.activeFilterKey === fKey,
   });
 
   // Derive isFetchingMore from request state and fetching state
@@ -110,10 +136,7 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
     }
   }, [recommendedFeed, isRecommendedFetching]);
 
-  // Update recent articles when data arrives. Reset fetchMoreRequested
-  // once the response lands so a subsequent getNextData() call is free
-  // to fire — otherwise the flag stays stuck true and the next page
-  // request short-circuits.
+  // Update recent articles when data arrives.
   useEffect(() => {
     if (recentFeedData && !isRecentFetching) {
       dispatchRecent({ type: 'merge', articles: recentFeedData.articles ?? [] });
@@ -139,13 +162,10 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
     if (isFetchingMore) return;
 
     if (selectedTab === 'latest') {
-      // Backend returns `next: ""` (omitted from JSON) when there are
-      // no more pages. Treat both undefined and empty string as "end of
-      // feed" and skip the fetch entirely so we don't thrash the state.
       const next = recentFeedData?.next;
       if (!next) return;
       setFetchMoreRequested(true);
-      setFrom(next);
+      dispatchCursor({ type: 'next', from: next });
     } else {
       setFetchMoreRequested(true);
       refetchRecommended();
@@ -161,19 +181,15 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
   const isError = isRecommendedError || isRecentError;
   const error = recommendedError || recentError;
 
-  // Remove an article from both tabs so "not interested" and similar
-  // actions stick regardless of which tab the user is looking at.
   const removeArticle = useCallback((articleId: string) => {
     dispatchRecent({ type: 'remove', articleId });
     dispatchRecommended({ type: 'remove', articleId });
   }, []);
 
-  // Full refresh: clear articles + reset cursor + refetch from scratch.
-  // Used by scroll-to-top button to reload the latest feed.
   const refresh = useCallback(() => {
     if (selectedTab === 'latest') {
       dispatchRecent({ type: 'reset' });
-      setFrom(null);
+      dispatchCursor({ type: 'reset' });
       setFetchMoreRequested(false);
       setTimeout(() => refetchRecent(), 0);
     } else {

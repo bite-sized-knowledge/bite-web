@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
 import type { BlogResponse } from '@/lib/api/blog';
@@ -25,13 +25,11 @@ function SheetContent({
   onClose: () => void;
 }) {
   const [search, setSearch] = useState('');
-  // Capture viewport height on mount before keyboard appears — useRef avoids
-  // the lint error for setState-in-effect and skips a re-render since the
-  // value is only read once in the initial render via the style prop.
-  const fixedHeight = useRef<number | null>(null);
-  if (fixedHeight.current === null && typeof window !== 'undefined') {
-    fixedHeight.current = Math.round(window.innerHeight * 0.7);
-  }
+  // Capture viewport height once on mount via lazy initializer — this runs
+  // before the keyboard appears and stays fixed for the sheet's lifetime.
+  const [fixedHeight] = useState(() =>
+    typeof window !== 'undefined' ? Math.round(window.innerHeight * 0.7) : null,
+  );
 
   // Lock body scroll while open
   useEffect(() => {
@@ -86,7 +84,7 @@ function SheetContent({
       {/* Sheet */}
       <motion.div
         className="relative w-full max-w-[640px] rounded-t-2xl bg-[var(--color-card-bg)] shadow-2xl flex flex-col"
-        style={{ height: fixedHeight.current ?? '70vh' }}
+        style={{ height: fixedHeight ?? '70vh' }}
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
