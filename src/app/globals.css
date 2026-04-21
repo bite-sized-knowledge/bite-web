@@ -169,7 +169,8 @@ body {
   background: var(--color-card-bg);
   border: 1px solid var(--color-border);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-  opacity: 0.85;
+  overflow: hidden;
+  will-change: transform, opacity;
 }
 
 .feed-peek-hint-top {

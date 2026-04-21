@@ -4,6 +4,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from
 import { AnimatePresence } from 'framer-motion';
 import { Article } from '@/types/Article';
 import { FeedCard } from './FeedCard';
+import { CardHeader } from './CardHeader';
 import { CardSkeleton } from './CardSkeleton';
 import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
 import { useFeedScroll } from '@/hooks/useFeedScroll';
@@ -167,6 +168,9 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   const touchStartTimeRef = useRef(0);
 
   const lastImpressionRef = useRef<string | null>(null);
+
+  const topPeekRef = useRef<HTMLDivElement>(null);
+  const bottomPeekRef = useRef<HTMLDivElement>(null);
 
   const { registerScrollFn } = useFeedScroll();
 
@@ -661,6 +665,80 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     currentIndex >= 3 && !showResumeButton && !isResuming;
 
   // --------------------------------------------------------------------------
+  // Scroll-linked peek hint animation
+  //
+  // The peek hints (top/bottom card previews) are positioned OUTSIDE the
+  // scroll container. Without animation they sit static while the actual
+  // cards scroll — creating a "placeholder" feel.
+  //
+  // This listener synchronises the peek hints with the scroll position:
+  //   - Both hints translateY upward at the same rate as the scroll,
+  //     creating the illusion that they're part of the same scrolling
+  //     surface (like YouTube Shorts).
+  //   - Opacity fades to 0 quickly so the actual card content from the
+  //     scroll container takes over without visual overlap.
+  //   - At rest (snap point), hints are fully visible at their normal
+  //     position showing the adjacent card's header.
+  // --------------------------------------------------------------------------
+  useEffect(() => {
+    const el = scrollElRef.current;
+    if (!el) return;
+
+    let ticking = false;
+
+    const updatePeeks = () => {
+      ticking = false;
+      const page = el.clientHeight;
+      if (page <= 0) return;
+
+      const rawFraction = (el.scrollTop % page) / page;
+      // Near snap points, treat as settled (avoid flicker from rounding)
+      const isSettled = rawFraction < 0.02 || rawFraction > 0.98;
+      const fraction = isSettled ? 0 : rawFraction;
+
+      // Slide peek hints upward with the scroll
+      const ty = -fraction * page;
+      // Fade out quickly so the real card takes over
+      const opacity = isSettled ? 1 : Math.max(0, 1 - fraction * 5);
+
+      const top = topPeekRef.current;
+      const bot = bottomPeekRef.current;
+      if (top) {
+        top.style.transform = `translateX(-50%) translateY(${ty}px)`;
+        top.style.opacity = String(opacity);
+      }
+      if (bot) {
+        bot.style.transform = `translateX(-50%) translateY(${ty}px)`;
+        bot.style.opacity = String(opacity);
+      }
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(updatePeeks);
+      }
+    };
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    requestAnimationFrame(updatePeeks);
+
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      const top = topPeekRef.current;
+      const bot = bottomPeekRef.current;
+      if (top) {
+        top.style.transform = 'translateX(-50%)';
+        top.style.opacity = '';
+      }
+      if (bot) {
+        bot.style.transform = 'translateX(-50%)';
+        bot.style.opacity = '';
+      }
+    };
+  }, [selectedTab, articles.length]);
+
+  // --------------------------------------------------------------------------
   // Persist + impression + pagination — off the settled currentIndex
   // --------------------------------------------------------------------------
   useEffect(() => {
@@ -734,11 +812,15 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
           </div>
         )}
       </div>
-      {currentIndex > 0 && (
-        <div className="feed-peek-hint feed-peek-hint-top" />
+      {currentIndex > 0 && articles[currentIndex - 1] && (
+        <div className="feed-peek-hint feed-peek-hint-top" ref={topPeekRef}>
+          <CardHeader blog={articles[currentIndex - 1].blog} />
+        </div>
       )}
-      {currentIndex < maxIndex && (
-        <div className="feed-peek-hint feed-peek-hint-bottom" />
+      {currentIndex < maxIndex && articles[currentIndex + 1] && (
+        <div className="feed-peek-hint feed-peek-hint-bottom" ref={bottomPeekRef}>
+          <CardHeader blog={articles[currentIndex + 1].blog} />
+        </div>
       )}
       <AnimatePresence>
         {showResumeButton && !isResuming && (
