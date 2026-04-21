@@ -23,8 +23,8 @@ interface FeedHeaderProps {
 
 const chipBase =
   'inline-flex items-center gap-1 rounded-full px-3 py-1 text-[13px] font-medium whitespace-nowrap transition-colors';
-const chipInactive = `${chipBase} bg-[var(--color-gray4)] text-[var(--color-gray2)]`;
-const chipActive = `${chipBase} bg-[var(--color-text)] text-[var(--color-bg)]`;
+const chipInactive = `${chipBase} border border-transparent bg-[var(--color-gray4)] text-[var(--color-gray2)]`;
+const chipActive = `${chipBase} border border-[var(--color-text)] text-[var(--color-text)] bg-transparent`;
 
 export const FeedHeader: React.FC<FeedHeaderProps> = ({
   selectedTab,
@@ -116,37 +116,44 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
         </div>
       </div>
 
-      {/* Row 2: compact filter chips (28px, only when latest tab active) */}
-      {showFilter && (
-        <div className="flex items-center justify-center gap-2 pb-2">
-          <button className={isAll ? chipActive : chipInactive} onClick={() => onFilterChange({ type: 'all' })}>
-            전체
-          </button>
-          <button className={isKo ? chipActive : chipInactive} onClick={() => onFilterChange({ type: 'lang', value: 'ko' })}>
-            국내
-          </button>
-          <button className={isEn ? chipActive : chipInactive} onClick={() => onFilterChange({ type: 'lang', value: 'en' })}>
-            해외
-          </button>
-          {isBlog && selectedBlog ? (
-            <button className={`${chipActive} gap-1`} onClick={() => onFilterChange({ type: 'all' })}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={selectedBlog.favicon} alt="" width={12} height={12} className="w-3 h-3 rounded-sm shrink-0" />
-              <span>{shortenBlogName(selectedBlog.title)}</span>
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden>
-                <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
+      {/* Row 2: filter chips with animated height */}
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-in-out"
+        style={{ gridTemplateRows: showFilter ? '1fr' : '0fr' }}
+        inert={!showFilter || undefined}
+        aria-hidden={!showFilter || undefined}
+      >
+        <div className="overflow-hidden">
+          <div className="flex items-center justify-center gap-2 pt-2 pb-2.5">
+            <button className={isAll ? chipActive : chipInactive} onClick={() => onFilterChange?.({ type: 'all' })}>
+              전체
             </button>
-          ) : (
-            <button className={chipInactive} onClick={onOpenBlogSheet}>
-              블로그
-              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden className="shrink-0 ml-0.5">
-                <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+            <button className={isKo ? chipActive : chipInactive} onClick={() => onFilterChange?.({ type: 'lang', value: 'ko' })}>
+              국내
             </button>
-          )}
+            <button className={isEn ? chipActive : chipInactive} onClick={() => onFilterChange?.({ type: 'lang', value: 'en' })}>
+              해외
+            </button>
+            {isBlog && selectedBlog ? (
+              <button className={`${chipActive} gap-1`} onClick={() => onFilterChange?.({ type: 'all' })}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={selectedBlog.favicon} alt="" width={12} height={12} className="w-3 h-3 rounded-sm shrink-0" />
+                <span>{shortenBlogName(selectedBlog.title)}</span>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden>
+                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            ) : (
+              <button className={chipInactive} onClick={onOpenBlogSheet}>
+                블로그
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden className="shrink-0 ml-0.5">
+                  <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
