@@ -7,8 +7,6 @@ import { useTheme } from '@/lib/theme/provider';
 import { SearchIcon } from '@/components/icons/TabIcons';
 import { Icon } from '@/components/ui/Icon';
 import type { FeedFilter } from '@/hooks/useFeedData';
-import type { BlogResponse } from '@/lib/api/blog';
-import { shortenBlogName } from '@/types/Blog';
 
 type TabType = 'latest' | 'recommend';
 
@@ -17,7 +15,7 @@ interface FeedHeaderProps {
   onTabChange: (tab: TabType) => void;
   filter?: FeedFilter;
   onFilterChange?: (filter: FeedFilter) => void;
-  selectedBlog?: BlogResponse | null;
+  selectedBlogCount?: number;
   onOpenBlogSheet?: () => void;
 }
 
@@ -31,7 +29,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   onTabChange,
   filter,
   onFilterChange,
-  selectedBlog,
+  selectedBlogCount = 0,
   onOpenBlogSheet,
 }) => {
   const { scrollToTop } = useFeedScroll();
@@ -134,17 +132,15 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
             <button className={isEn ? chipActive : chipInactive} onClick={() => onFilterChange?.({ type: 'lang', value: 'en' })}>
               해외
             </button>
-            {isBlog && selectedBlog ? (
+            {isBlog && selectedBlogCount > 0 ? (
               <button className={`${chipActive} gap-1`} onClick={() => onFilterChange?.({ type: 'all' })}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={selectedBlog.favicon} alt="" width={12} height={12} className="w-3 h-3 rounded-sm shrink-0" />
-                <span>{shortenBlogName(selectedBlog.title)}</span>
+                <span>블로그 {selectedBlogCount}개</span>
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden>
                   <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               </button>
             ) : (
-              <button className={chipInactive} onClick={onOpenBlogSheet}>
+              <button className={isBlog ? chipActive : chipInactive} onClick={onOpenBlogSheet}>
                 블로그
                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden className="shrink-0 ml-0.5">
                   <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

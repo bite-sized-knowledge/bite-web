@@ -10,7 +10,7 @@ type TabType = 'latest' | 'recommend';
 export type FeedFilter =
   | { type: 'all' }
   | { type: 'lang'; value: 'ko' | 'en' }
-  | { type: 'blog'; blogId: string };
+  | { type: 'blog'; blogIds: string[] };
 
 function mergeWithoutDuplicates(prev: Article[], next: Article[]): Article[] {
   const ids = new Set(prev.map((a) => a.id));
@@ -43,7 +43,7 @@ function articleReducer(state: Article[], action: ArticleAction): Article[] {
 function filterKey(filter: FeedFilter): string {
   if (filter.type === 'all') return 'all';
   if (filter.type === 'lang') return `lang:${filter.value}`;
-  return `blog:${filter.blogId}`;
+  return `blog:${[...filter.blogIds].sort().join(',')}`;
 }
 
 // Bundles cursor + filter into one reducer so filter changes atomically
@@ -76,7 +76,7 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
   const [fetchMoreRequested, setFetchMoreRequested] = useState(false);
 
   const lang = filter.type === 'lang' ? filter.value : null;
-  const blogId = filter.type === 'blog' ? filter.blogId : null;
+  const blogIds = filter.type === 'blog' ? filter.blogIds : null;
   const fKey = filterKey(filter);
 
   // Cursor reducer: when filterKey changes, `from` resets to null in the
@@ -120,7 +120,7 @@ export function useFeedData(selectedTab: TabType, filter: FeedFilter = { type: '
     refetch: refetchRecent,
   } = useQuery({
     queryKey: ['recentFeed', cursor.from, filter],
-    queryFn: () => getRecentFeed(cursor.from, lang, blogId),
+    queryFn: () => getRecentFeed(cursor.from, lang, blogIds),
     enabled: selectedTab === 'latest' && cursor.activeFilterKey === fKey,
   });
 

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { FeedHeader } from '@/components/feed/FeedHeader';
 import { FeedContainer } from '@/components/feed/FeedContainer';
 import { BlogSelectSheet } from '@/components/feed/BlogSelectSheet';
 import { useFeedData, type FeedFilter } from '@/hooks/useFeedData';
-import { getBlogs, type BlogResponse } from '@/lib/api/blog';
+import { getBlogs } from '@/lib/api/blog';
 import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay';
 
 type TabType = 'latest' | 'recommend';
@@ -30,13 +30,12 @@ export default function FeedPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const selectedBlog = useMemo(() => {
-    if (filter.type !== 'blog') return null;
-    return blogs.find((b) => b.id === filter.blogId) ?? null;
-  }, [filter, blogs]);
-
-  const handleBlogSelect = (blog: BlogResponse) => {
-    setFilter({ type: 'blog', blogId: blog.id });
+  const handleBlogSelect = (selectedBlogIds: string[]) => {
+    if (selectedBlogIds.length === 0) {
+      setFilter({ type: 'all' });
+    } else {
+      setFilter({ type: 'blog', blogIds: selectedBlogIds });
+    }
   };
 
   const {
@@ -74,13 +73,14 @@ export default function FeedPage() {
         onTabChange={handleTabChange}
         filter={filter}
         onFilterChange={setFilter}
-        selectedBlog={selectedBlog}
+        selectedBlogCount={filter.type === 'blog' ? filter.blogIds.length : 0}
         onOpenBlogSheet={() => setBlogSheetOpen(true)}
       />
       <BlogSelectSheet
         open={blogSheetOpen}
         blogs={blogs}
-        onSelect={handleBlogSelect}
+        selectedBlogIds={filter.type === 'blog' ? filter.blogIds : []}
+        onApply={handleBlogSelect}
         onClose={() => setBlogSheetOpen(false)}
       />
       <AnimatePresence mode="wait" custom={direction} initial={false}>

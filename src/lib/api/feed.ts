@@ -14,12 +14,12 @@ interface GetRecentFeedResponse {
 export const getRecentFeed = async (
   from: string | null,
   lang?: string | null,
-  blogId?: string | null,
+  blogIds?: string[] | null,
 ) => {
   const params = new URLSearchParams();
   if (from) params.set('from', from);
-  if (blogId) {
-    params.set('blogId', blogId);
+  if (blogIds && blogIds.length > 0) {
+    params.set('blogId', blogIds.join(','));
   } else if (lang) {
     params.set('lang', lang);
   }
