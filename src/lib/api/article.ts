@@ -115,3 +115,20 @@ export const searchArticles = async (
   );
   return { articles: data?.articles ?? [], next: data?.next ?? null };
 };
+
+export const suggestQueries = async (
+  prefix: string,
+  signal?: AbortSignal,
+  limit: number = 8,
+): Promise<string[]> => {
+  const params = new URLSearchParams();
+  if (prefix) params.set('q', prefix);
+  params.set('limit', String(limit));
+  const url = `/v1/articles/suggest?${params.toString()}`;
+  const { data } = await api.get<{ suggestions: string[] }>(
+    url,
+    { signal },
+    false,
+  );
+  return data?.suggestions ?? [];
+};
