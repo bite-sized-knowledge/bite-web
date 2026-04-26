@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Article } from '@/types/Article';
-import { searchArticles } from '@/lib/api/article';
+import { SearchFilters as ApiSearchFilters, searchArticles } from '@/lib/api/article';
 import { SearchResultList } from '@/components/search/SearchResultList';
 import { ArticlePreviewSheet } from '@/components/search/ArticlePreviewSheet';
+import { SearchFilters, SearchLang } from '@/components/search/SearchFilters';
 import { useRecentSearches } from '@/hooks/useRecentSearches';
 import { Icon } from '@/components/ui/Icon';
 import { ArrowLeftIcon } from '@/components/icons/TabIcons';
@@ -20,9 +21,42 @@ type Status = 'idle' | 'loading' | 'results' | 'empty' | 'error';
 
 const DEBOUNCE_MS = 300;
 
-export default function SearchPage() {
+function buildQueryString(
+  query: string,
+  categoryId: number | null,
+  lang: SearchLang,
+): string {
+  const params = new URLSearchParams();
+  if (query) params.set('q', query);
+  if (categoryId !== null) params.set('category', String(categoryId));
+  if (lang) params.set('lang', lang);
+  return params.toString();
+}
+
+function buildApiFilters(
+  categoryId: number | null,
+  lang: SearchLang,
+): ApiSearchFilters {
+  const filters: ApiSearchFilters = {};
+  if (categoryId !== null) filters.categoryId = categoryId;
+  if (lang) filters.lang = lang;
+  return filters;
+}
+
+function SearchPageContent() {
   const router = useRouter();
-  const [query, setQuery] = useState('');
+  const searchParams = useSearchParams();
+
+  const [query, setQuery] = useState(() => searchParams.get('q') ?? '');
+  const [categoryId, setCategoryId] = useState<number | null>(() => {
+    const v = searchParams.get('category');
+    return v ? Number(v) : null;
+  });
+  const [lang, setLang] = useState<SearchLang>(() => {
+    const v = searchParams.get('lang');
+    return v === 'ko' || v === 'en' ? v : null;
+  });
+
   const [status, setStatus] = useState<Status>('idle');
   const [articles, setArticles] = useState<Article[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -35,10 +69,20 @@ export default function SearchPage() {
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const queryRef = useRef(query);
+  const categoryRef = useRef(categoryId);
+  const langRef = useRef<SearchLang>(lang);
   queryRef.current = query;
+  categoryRef.current = categoryId;
+  langRef.current = lang;
+
+  useEffect(() => {
+    const qs = buildQueryString(query, categoryId, lang);
+    const url = qs ? `/search?${qs}` : '/search';
+    router.replace(url, { scroll: false });
+  }, [query, categoryId, lang, router]);
 
   const runSearch = useCallback(
-    async (q: string) => {
+    async (q: string, cat: number | null, lg: SearchLang) => {
       if (!q.trim()) {
         setStatus('idle');
         setArticles([]);
@@ -55,6 +99,8 @@ export default function SearchPage() {
         const { articles: results, next } = await searchArticles(
           q,
           controller.signal,
+          undefined,
+          buildApiFilters(cat, lg),
         );
         if (controller.signal.aborted) return;
         setArticles(results);
@@ -78,6 +124,7 @@ export default function SearchPage() {
         queryRef.current,
         controller.signal,
         nextCursor,
+        buildApiFilters(categoryRef.current, langRef.current),
       );
       setArticles((prev) => [...prev, ...more]);
       setNextCursor(next);
@@ -90,9 +137,9 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (!query.trim()) return;
-    const t = setTimeout(() => runSearch(query), DEBOUNCE_MS);
+    const t = setTimeout(() => runSearch(query, categoryId, lang), DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [query, runSearch]);
+  }, [query, categoryId, lang, runSearch]);
 
   useEffect(() => {
     return () => {
@@ -106,7 +153,7 @@ export default function SearchPage() {
 
   const handleChipClick = (q: string) => {
     setQuery(q);
-    runSearch(q);
+    runSearch(q, categoryId, lang);
   };
 
   const handleClear = () => {
@@ -119,7 +166,6 @@ export default function SearchPage() {
 
   return (
     <main className="min-h-svh bg-[var(--color-bg)]">
-      {/* Header */}
       <header className="sticky top-0 z-10 flex h-[var(--header-height)] items-center gap-2 bg-[var(--color-bg)] px-3">
         <button
           type="button"
@@ -144,7 +190,7 @@ export default function SearchPage() {
                 setNextCursor(null);
               }
             }}
-            placeholder="검색어를 입력해주세요"
+            placeholder="키워드 또는 자연스러운 문장으로 검색해보세요"
             className="flex-1 bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-gray3)]"
             enterKeyHint="search"
           />
@@ -161,7 +207,13 @@ export default function SearchPage() {
         </div>
       </header>
 
-      {/* Body */}
+      <SearchFilters
+        categoryId={categoryId}
+        lang={lang}
+        onCategoryChange={setCategoryId}
+        onLangChange={setLang}
+      />
+
       {status === 'idle' && (
         <section className="px-4 py-4">
           {recent.length === 0 ? (
@@ -249,5 +301,13 @@ export default function SearchPage() {
         onClose={() => setSelectedArticle(null)}
       />
     </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-svh bg-[var(--color-bg)]" />}>
+      <SearchPageContent />
+    </Suspense>
   );
 }

@@ -85,15 +85,29 @@ export const getLikedArticles = async (
   return data;
 };
 
+export type SearchFilters = {
+  categoryId?: number;
+  lang?: 'ko' | 'en';
+  blogId?: number;
+  mode?: 'hybrid' | 'dense' | 'fulltext';
+};
+
 export const searchArticles = async (
   query: string,
   signal?: AbortSignal,
   from?: string,
+  filters?: SearchFilters,
 ) => {
-  let url = `/v1/articles/search?query=${encodeURIComponent(query)}&limit=${ROWS_PER_PAGE}`;
-  if (from) {
-    url += `&from=${from}`;
-  }
+  const params = new URLSearchParams();
+  params.set('query', query);
+  params.set('limit', String(ROWS_PER_PAGE));
+  if (from) params.set('from', from);
+  if (filters?.categoryId !== undefined) params.set('category_id', String(filters.categoryId));
+  if (filters?.lang) params.set('lang', filters.lang);
+  if (filters?.blogId !== undefined) params.set('blog_id', String(filters.blogId));
+  if (filters?.mode) params.set('mode', filters.mode);
+
+  const url = `/v1/articles/search?${params.toString()}`;
   const { data } = await api.get<{ articles: Article[]; next?: string }>(
     url,
     { signal },
