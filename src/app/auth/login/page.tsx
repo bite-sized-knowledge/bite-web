@@ -1,22 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { login } from '@/lib/api/auth';
 import { useAuth } from '@/lib/auth/provider';
 import { syncLocalBookmarksToServer } from '@/lib/localBookmarks';
+import { safeReturnTo, RETURN_TO_PARAM } from '@/lib/auth/returnTo';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setLoggedIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const returnTo = safeReturnTo(searchParams.get(RETURN_TO_PARAM));
 
   const isFormValid = email.trim().length > 0 && password.trim().length > 0;
 
@@ -33,7 +37,7 @@ export default function LoginPage() {
       if (success) {
         syncLocalBookmarksToServer();
         setLoggedIn(true);
-        router.push('/feed');
+        router.push(returnTo);
       } else {
         setError('이메일 또는 비밀번호가 틀립니다.');
       }
@@ -54,7 +58,7 @@ export default function LoginPage() {
           로그인하고 더 유용한 지식을 얻어보세요!
         </p>
 
-        <OAuthButtons />
+        <OAuthButtons returnTo={returnTo} />
 
         {/* Divider */}
         <div className="flex items-center gap-4 my-6">
@@ -108,5 +112,13 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

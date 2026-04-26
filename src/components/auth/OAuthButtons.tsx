@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { OAUTH_RETURN_TO_KEY } from '@/lib/auth/returnTo';
 
 function GitHubIcon() {
   return (
@@ -39,12 +40,30 @@ function generateOAuthState(): string {
   return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export default function OAuthButtons() {
+interface OAuthButtonsProps {
+  /**
+   * Path to redirect to after the OAuth callback succeeds. Stashed in
+   * sessionStorage at the start of the flow because OAuth providers
+   * round-trip through their own URL and can't carry our query params.
+   */
+  returnTo?: string;
+}
+
+export default function OAuthButtons({ returnTo }: OAuthButtonsProps = {}) {
+  const stashReturnTo = () => {
+    if (returnTo) {
+      sessionStorage.setItem(OAUTH_RETURN_TO_KEY, returnTo);
+    } else {
+      sessionStorage.removeItem(OAUTH_RETURN_TO_KEY);
+    }
+  };
+
   const handleGitHub = () => {
     const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
     const redirectUri = `${window.location.origin}/auth/callback/github`;
     const state = generateOAuthState();
     sessionStorage.setItem('oauth_state_github', state);
+    stashReturnTo();
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email&state=${encodeURIComponent(state)}`;
   };
 
@@ -53,6 +72,7 @@ export default function OAuthButtons() {
     const redirectUri = `${window.location.origin}/auth/callback/google`;
     const state = generateOAuthState();
     sessionStorage.setItem('oauth_state_google', state);
+    stashReturnTo();
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(state)}`;
   };
 

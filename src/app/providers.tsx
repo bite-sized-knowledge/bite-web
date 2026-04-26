@@ -5,6 +5,7 @@ import { QueryProvider } from '@/lib/query-provider';
 import { AuthProvider } from '@/lib/auth/provider';
 import { ThemeProvider } from '@/lib/theme/provider';
 import { ToastProvider } from '@/components/ui/Toast';
+import { LoginPromptProvider } from '@/lib/auth/loginPrompt';
 import { FeedScrollProvider } from '@/hooks/useFeedScroll';
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -13,7 +14,9 @@ export function Providers({ children }: { children: ReactNode }) {
       <AuthProvider>
         <ThemeProvider>
           <ToastProvider>
-            <FeedScrollProvider>{children}</FeedScrollProvider>
+            <LoginPromptProvider>
+              <FeedScrollProvider>{children}</FeedScrollProvider>
+            </LoginPromptProvider>
           </ToastProvider>
         </ThemeProvider>
       </AuthProvider>

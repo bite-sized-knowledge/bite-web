@@ -8,6 +8,7 @@ import {
   useShareMutation,
 } from '@/hooks/useArticleMutations';
 import { useAuth } from '@/lib/auth/provider';
+import { useLoginPrompt } from '@/lib/auth/loginPrompt';
 import {
   isLocallyBookmarked,
   addLocalBookmark,
@@ -23,6 +24,7 @@ interface CardFooterProps {
 
 export const CardFooter: React.FC<CardFooterProps> = ({ article }) => {
   const { isLoggedIn } = useAuth();
+  const loginPrompt = useLoginPrompt();
   const [liked, setLiked] = useState(article.isLiked);
   const [likeCount, setLikeCount] = useState(article.likeCount);
   const [bookmarked, setBookmarked] = useState(
@@ -44,8 +46,9 @@ export const CardFooter: React.FC<CardFooterProps> = ({ article }) => {
   const shareMutation = useShareMutation(article.id);
 
   const handleLike = useCallback(() => {
+    if (!loginPrompt.requireAuth('좋아요')) return;
     likeMutation.mutate(liked);
-  }, [liked, likeMutation]);
+  }, [liked, likeMutation, loginPrompt]);
 
   const handleBookmark = useCallback(() => {
     if (isLoggedIn) {

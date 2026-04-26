@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/provider';
 import { syncLocalBookmarksToServer } from '@/lib/localBookmarks';
+import { safeReturnTo, OAUTH_RETURN_TO_KEY } from '@/lib/auth/returnTo';
 
 /**
  * OAuth provider callback state machine.
@@ -68,6 +69,11 @@ export function useOAuthCallback(
     if (processedRef.current) return;
     processedRef.current = true;
 
+    // Read+clear the OAuth stash up front so a failed validation below
+    // doesn't leak the returnTo into the next attempt.
+    const returnTo = safeReturnTo(sessionStorage.getItem(OAUTH_RETURN_TO_KEY));
+    sessionStorage.removeItem(OAUTH_RETURN_TO_KEY);
+
     if (!code) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- See file header: error derives from sessionStorage/URL params that cannot be read at render time on SSR.
       setError('인증 코드가 없습니다.');
@@ -87,7 +93,7 @@ export function useOAuthCallback(
         if (success) {
           syncLocalBookmarksToServer();
           setLoggedIn(true);
-          router.push('/feed');
+          router.push(returnTo);
         } else {
           setError(failureMessage);
         }
