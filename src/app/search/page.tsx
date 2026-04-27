@@ -93,13 +93,11 @@ function SearchPageContent() {
     [data],
   );
 
+  const queryId = data?.pages[0]?.queryId ?? null;
+  const rankingFilters = useMemo(() => ({ categoryId, lang }), [categoryId, lang]);
   const ranking = useMemo(
-    () => ({
-      queryId: data?.pages[0]?.queryId ?? null,
-      mode: 'hybrid' as const,
-      filters: { categoryId, lang },
-    }),
-    [data, categoryId, lang],
+    () => ({ queryId, mode: 'hybrid' as const, filters: rankingFilters }),
+    [queryId, rankingFilters],
   );
 
   const status = useMemo<

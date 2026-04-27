@@ -58,7 +58,8 @@ function SheetContent({
       }
     : null;
 
-  // S_PREVIEW: fire on mount (search only)
+  // S_PREVIEW: fire on mount (search only). ranking?.queryId가 바뀌어도 같은 article을
+  // 다시 preview하면 새 세션 의도로 한 번 더 fire — 그래서 dep에 queryId 포함.
   useEffect(() => {
     openedAtRef.current = Date.now();
     articleOpenedRef.current = false;
@@ -69,7 +70,7 @@ function SheetContent({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [article.id]);
+  }, [article.id, ranking?.queryId]);
 
   // S_PREVIEW_DISMISS: fire on unmount if article was NOT opened (search only)
   useEffect(() => {
