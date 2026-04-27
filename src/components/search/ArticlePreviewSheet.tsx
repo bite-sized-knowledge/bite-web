@@ -8,6 +8,7 @@ import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
 import { CardHeader } from '@/components/feed/CardHeader';
 import { CardBody } from '@/components/feed/CardBody';
 import { CardFooter } from '@/components/feed/CardFooter';
+import type { SearchRankingContext } from './SearchResultCard';
 
 const DRAG_CLOSE_THRESHOLD = 80;
 
@@ -16,6 +17,7 @@ interface ArticlePreviewSheetProps {
   query?: string;
   position?: number;
   source?: 'search' | 'bookmarks';
+  ranking?: SearchRankingContext;
   onClose: () => void;
 }
 
@@ -24,12 +26,14 @@ function SheetContent({
   query = '',
   position = 0,
   source = 'search',
+  ranking,
   onClose,
 }: {
   article: Article;
   query?: string;
   position?: number;
   source?: 'search' | 'bookmarks';
+  ranking?: SearchRankingContext;
   onClose: () => void;
 }) {
   const isSearch = source === 'search';
@@ -45,35 +49,38 @@ function SheetContent({
     };
   }, []);
 
+  const searchExtras = isSearch
+    ? {
+        source: 'search' as const,
+        metadata: { query, mode: ranking?.mode, filters: ranking?.filters },
+        queryId: ranking?.queryId ?? undefined,
+        queryText: query,
+      }
+    : null;
+
   // S_PREVIEW: fire on mount (search only)
   useEffect(() => {
     openedAtRef.current = Date.now();
     articleOpenedRef.current = false;
-    if (isSearch) {
+    if (searchExtras) {
       sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.S_PREVIEW, {
-        source: 'search',
+        ...searchExtras,
         position,
-        metadata: { query },
       });
     }
-  }, [article.id, query, position, isSearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [article.id]);
 
   // S_PREVIEW_DISMISS: fire on unmount if article was NOT opened (search only)
   useEffect(() => {
     return () => {
-      if (isSearch && !articleOpenedRef.current) {
+      if (searchExtras && !articleOpenedRef.current) {
         const duration = Date.now() - openedAtRef.current;
-        sendEvent(
-          TARGET_TYPE.ARTICLE,
-          article.id,
-          EVENT_TYPE.S_PREVIEW_DISMISS,
-          {
-            source: 'search',
-            dwellTimeMs: duration,
-            position,
-            metadata: { query },
-          },
-        );
+        sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.S_PREVIEW_DISMISS, {
+          ...searchExtras,
+          dwellTimeMs: duration,
+          position,
+        });
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,12 +89,11 @@ function SheetContent({
   // Capture click on CardBody area to fire S_CLICK (search only)
   const handleContentClick = () => {
     articleOpenedRef.current = true;
-    if (isSearch) {
+    if (searchExtras) {
       sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.S_CLICK, {
-        source: 'search',
+        ...searchExtras,
         dwellTimeMs: Date.now() - openedAtRef.current,
         position,
-        metadata: { query },
       });
     }
   };
@@ -144,6 +150,7 @@ export function ArticlePreviewSheet({
   query,
   position,
   source,
+  ranking,
   onClose,
 }: ArticlePreviewSheetProps) {
   if (typeof window === 'undefined') return null;
@@ -157,6 +164,7 @@ export function ArticlePreviewSheet({
           query={query}
           position={position}
           source={source}
+          ranking={ranking}
           onClose={onClose}
         />
       )}

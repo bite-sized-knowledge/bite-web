@@ -3,7 +3,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Article } from '@/types/Article';
-import { SearchResultCard } from './SearchResultCard';
+import { SearchResultCard, type SearchRankingContext } from './SearchResultCard';
 
 const container = {
   hidden: {},
@@ -22,6 +22,7 @@ interface SearchResultListProps {
   loading: boolean;
   onLoadMore: () => void;
   onSelectArticle: (article: Article, position: number) => void;
+  ranking?: SearchRankingContext;
 }
 
 export function SearchResultList({
@@ -31,6 +32,7 @@ export function SearchResultList({
   loading,
   onLoadMore,
   onSelectArticle,
+  ranking,
 }: SearchResultListProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -68,7 +70,7 @@ export function SearchResultList({
       >
         {articles.map((article, index) => (
           <motion.div key={article.id} variants={item}>
-            <SearchResultCard article={article} query={query} position={index} onSelect={onSelectArticle} />
+            <SearchResultCard article={article} query={query} position={index} onSelect={onSelectArticle} ranking={ranking} />
           </motion.div>
         ))}
       </motion.div>

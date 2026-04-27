@@ -93,6 +93,15 @@ function SearchPageContent() {
     [data],
   );
 
+  const ranking = useMemo(
+    () => ({
+      queryId: data?.pages[0]?.queryId ?? null,
+      mode: 'hybrid' as const,
+      filters: { categoryId, lang },
+    }),
+    [data, categoryId, lang],
+  );
+
   const status = useMemo<
     'idle' | 'loading' | 'results' | 'empty' | 'error'
   >(() => {
@@ -287,6 +296,7 @@ function SearchPageContent() {
             setSelectedArticle(article);
             setSelectedPosition(position);
           }}
+          ranking={ranking}
         />
       )}
 
@@ -294,6 +304,7 @@ function SearchPageContent() {
         article={selectedArticle}
         query={committedQuery}
         position={selectedPosition}
+        ranking={ranking}
         onClose={() => setSelectedArticle(null)}
       />
     </main>

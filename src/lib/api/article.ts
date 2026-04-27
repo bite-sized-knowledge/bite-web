@@ -89,7 +89,13 @@ export type SearchFilters = {
   categoryId?: number;
   lang?: 'ko' | 'en';
   blogId?: number;
-  mode?: 'hybrid' | 'dense' | 'fulltext';
+  mode?: 'hybrid' | 'hybrid_rerank' | 'dense' | 'fulltext';
+};
+
+export type SearchPage = {
+  articles: Article[];
+  next: string | null;
+  queryId: string | null;
 };
 
 export const searchArticles = async (
@@ -97,7 +103,7 @@ export const searchArticles = async (
   signal?: AbortSignal,
   from?: string,
   filters?: SearchFilters,
-) => {
+): Promise<SearchPage> => {
   const params = new URLSearchParams();
   params.set('query', query);
   params.set('limit', String(ROWS_PER_PAGE));
@@ -108,12 +114,16 @@ export const searchArticles = async (
   if (filters?.mode) params.set('mode', filters.mode);
 
   const url = `/v1/articles/search?${params.toString()}`;
-  const { data } = await api.get<{ articles: Article[]; next?: string }>(
+  const { data } = await api.get<{ articles: Article[]; next?: string; query_id?: string }>(
     url,
     { signal },
     false,
   );
-  return { articles: data?.articles ?? [], next: data?.next ?? null };
+  return {
+    articles: data?.articles ?? [],
+    next: data?.next ?? null,
+    queryId: data?.query_id ?? null,
+  };
 };
 
 export const suggestQueries = async (

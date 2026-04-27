@@ -24,14 +24,21 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(months / 12)}년 전`;
 }
 
+export interface SearchRankingContext {
+  queryId?: string | null;
+  mode?: string;
+  filters?: { categoryId?: number | null; lang?: string | null };
+}
+
 interface SearchResultCardProps {
   article: Article;
   query: string;
   position: number;
   onSelect: (article: Article, position: number) => void;
+  ranking?: SearchRankingContext;
 }
 
-export function SearchResultCard({ article, query, position, onSelect }: SearchResultCardProps) {
+export function SearchResultCard({ article, query, position, onSelect, ranking }: SearchResultCardProps) {
   // S_IMP: fire once when card enters viewport
   const cardRef = useRef<HTMLDivElement>(null);
   const impressedRef = useRef(false);
@@ -45,7 +52,13 @@ export function SearchResultCard({ article, query, position, onSelect }: SearchR
           sendEvent(TARGET_TYPE.ARTICLE, article.id, EVENT_TYPE.S_IMP, {
             source: 'search',
             position,
-            metadata: { query },
+            metadata: {
+              query,
+              mode: ranking?.mode,
+              filters: ranking?.filters,
+            },
+            queryId: ranking?.queryId ?? undefined,
+            queryText: query,
           });
           observer.disconnect();
         }
@@ -54,7 +67,7 @@ export function SearchResultCard({ article, query, position, onSelect }: SearchR
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [article.id, position, query]);
+  }, [article.id, position, query, ranking?.queryId, ranking?.mode, ranking?.filters]);
 
   const thumbnail =
     article.thumbnail || DEFAULT_THUMBNAIL;

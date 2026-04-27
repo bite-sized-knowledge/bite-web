@@ -1,6 +1,6 @@
 import { getAccessToken } from './auth';
 import { getApiBaseUrl } from './baseUrl';
-import { getDeviceId } from '@/lib/device';
+import { getDeviceId, getSessionId } from '@/lib/device';
 
 export const TARGET_TYPE = {
   BLOG: 'BLOG',
@@ -41,6 +41,10 @@ export interface EventExtras {
   position?: number;
   /** Arbitrary JSON metadata (e.g. search query). */
   metadata?: Record<string, unknown>;
+  /** 검색 세션 단위 식별자. recsys-serving이 발급한 query_id를 echo. */
+  queryId?: string;
+  /** 검색어 원문(서버에서 200자 truncate). 검색 이벤트에만 첨부. */
+  queryText?: string;
 }
 
 // Cross-tab coordination: once we see a 401 for authenticated events,
@@ -73,12 +77,14 @@ export const sendEvent = (
     disabledForToken = null;
   }
 
+  const sessionId = getSessionId();
   const body: Record<string, unknown> = {
     targetType,
     targetId,
     eventType,
     event_type: eventType,
     device_id: deviceId,
+    session_id: sessionId,
   };
   if (targetType === 'ARTICLE') body.article_id = targetId;
   if (extras.dwellTimeMs !== undefined) {
@@ -87,6 +93,8 @@ export const sendEvent = (
   if (extras.source) body.source = extras.source;
   if (extras.position !== undefined) body.position = extras.position;
   if (extras.metadata) body.metadata = extras.metadata;
+  if (extras.queryId) body.query_id = extras.queryId;
+  if (extras.queryText) body.query_text = extras.queryText;
 
   const baseUrl = getApiBaseUrl();
   const headers: Record<string, string> = {
