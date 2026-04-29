@@ -56,7 +56,7 @@ export function SearchResultList({
   }, [handleIntersect]);
 
   return (
-    <div className="px-4 pb-8 max-w-2xl mx-auto">
+    <div className="px-4 pb-8">
       <p className="text-xs text-[var(--color-gray3)] mb-3">
         {articles.length}개의 검색 결과
         {hasMore && '+'}
