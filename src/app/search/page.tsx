@@ -13,7 +13,7 @@ import { useSearchArticles } from '@/hooks/useSearchArticles';
 import { useSuggestions } from '@/hooks/useSuggestions';
 import { useRecentSearches } from '@/hooks/useRecentSearches';
 import { Icon } from '@/components/ui/Icon';
-import { ArrowLeftIcon } from '@/components/icons/TabIcons';
+import { ArrowLeftIcon, FilterIcon } from '@/components/icons/TabIcons';
 
 const SearchLoadingLottie = dynamic(
   () => import('./SearchLoadingLottie').then((m) => m.SearchLoadingLottie),
@@ -59,8 +59,12 @@ function SearchPageContent() {
     return v === 'ko' || v === 'en' ? v : null;
   });
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [selectedPosition, setSelectedPosition] = useState(0);
+
+  const activeFilterCount =
+    (categoryId !== null ? 1 : 0) + (lang !== null ? 1 : 0);
 
   const { recent, add: addRecent, remove: removeRecent, clear: clearRecent } =
     useRecentSearches();
@@ -152,6 +156,8 @@ function SearchPageContent() {
     setSuggestionsOpen(false);
   }, []);
 
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
+
   const handleClear = () => {
     setInputValue('');
     setCommittedQuery('');
@@ -161,62 +167,85 @@ function SearchPageContent() {
 
   return (
     <main className="min-h-svh bg-[var(--color-bg)]">
-      <header className="sticky top-0 z-10 flex h-[var(--header-height)] items-center gap-2 bg-[var(--color-bg)] px-3">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          aria-label="뒤로 가기"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
-        >
-          <ArrowLeftIcon size={20} />
-        </button>
-        <div ref={containerRef} className="relative flex-1">
-          <div className="flex items-center gap-2 rounded-full bg-[var(--color-gray4)] px-4 py-2">
-            <input
-              ref={inputRef}
-              type="search"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onFocus={() => setSuggestionsOpen(true)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  commitQuery(inputValue);
-                } else if (e.key === 'Escape') {
-                  setSuggestionsOpen(false);
-                }
-              }}
-              placeholder="키워드 또는 자연스러운 문장으로 검색해보세요"
-              className="flex-1 bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-gray3)]"
-              enterKeyHint="search"
-              autoComplete="off"
-            />
-            {inputValue.length > 0 && (
+      <header className="sticky top-0 z-10 h-[var(--header-height)] bg-[var(--color-bg)] px-3">
+        <div className="mx-auto flex h-full w-full max-w-[640px] items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="뒤로 가기"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
+          >
+            <ArrowLeftIcon size={20} />
+          </button>
+          <div ref={containerRef} className="relative flex-1">
+            <div className="flex items-center gap-2 rounded-full bg-[var(--color-gray4)] px-4 py-2">
+              <input
+                ref={inputRef}
+                type="search"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onFocus={() => setSuggestionsOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    commitQuery(inputValue);
+                  } else if (e.key === 'Escape') {
+                    setSuggestionsOpen(false);
+                  }
+                }}
+                placeholder="키워드 또는 자연스러운 문장으로 검색해보세요"
+                className="flex-1 bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-gray3)]"
+                enterKeyHint="search"
+                autoComplete="off"
+              />
+              {inputValue.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  aria-label="검색어 지우기"
+                  className="flex h-5 w-5 items-center justify-center"
+                >
+                  <Icon name="close" size={16} />
+                </button>
+              )}
+              <span className="h-4 w-px shrink-0 bg-[var(--color-gray3)]/30" />
               <button
                 type="button"
-                onClick={handleClear}
-                aria-label="검색어 지우기"
-                className="flex h-5 w-5 items-center justify-center"
+                data-filter-trigger
+                onClick={() => {
+                  setFiltersOpen((o) => !o);
+                  setSuggestionsOpen(false);
+                }}
+                aria-label="검색 필터"
+                aria-expanded={filtersOpen}
+                className="relative flex h-6 w-6 shrink-0 items-center justify-center text-[var(--color-text)]"
               >
-                <Icon name="close" size={16} />
+                <FilterIcon size={18} />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-main)] px-1 text-[10px] font-semibold leading-none text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
+            </div>
+            {suggestionsOpen && (
+              <SearchSuggestions
+                suggestions={suggestions}
+                onSelect={commitQuery}
+              />
             )}
-          </div>
-          {suggestionsOpen && (
-            <SearchSuggestions
-              suggestions={suggestions}
-              onSelect={commitQuery}
+            <SearchFilters
+              open={filtersOpen}
+              onClose={closeFilters}
+              categoryId={categoryId}
+              lang={lang}
+              onCategoryChange={setCategoryId}
+              onLangChange={setLang}
             />
-          )}
+          </div>
         </div>
       </header>
 
-      <SearchFilters
-        categoryId={categoryId}
-        lang={lang}
-        onCategoryChange={setCategoryId}
-        onLangChange={setLang}
-      />
-
+      <div className="mx-auto w-full max-w-[640px]">
       {status === 'idle' && (
         <section className="px-4 py-4">
           {recent.length === 0 ? (
@@ -297,6 +326,7 @@ function SearchPageContent() {
           ranking={ranking}
         />
       )}
+      </div>
 
       <ArticlePreviewSheet
         article={selectedArticle}
