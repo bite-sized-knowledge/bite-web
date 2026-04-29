@@ -1,12 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Article } from '@/types/Article';
-import { searchArticles } from '@/lib/api/article';
+import type { SearchFilters as ApiSearchFilters } from '@/lib/api/article';
 import { SearchResultList } from '@/components/search/SearchResultList';
 import { ArticlePreviewSheet } from '@/components/search/ArticlePreviewSheet';
+import { SearchFilters, SearchLang } from '@/components/search/SearchFilters';
+import { SearchSuggestions } from '@/components/search/SearchSuggestions';
+import { useSearchArticles } from '@/hooks/useSearchArticles';
+import { useSuggestions } from '@/hooks/useSuggestions';
 import { useRecentSearches } from '@/hooks/useRecentSearches';
 import { Icon } from '@/components/ui/Icon';
 import { ArrowLeftIcon } from '@/components/icons/TabIcons';
@@ -16,110 +20,147 @@ const SearchLoadingLottie = dynamic(
   { ssr: false },
 );
 
-type Status = 'idle' | 'loading' | 'results' | 'empty' | 'error';
-
 const DEBOUNCE_MS = 300;
 
-export default function SearchPage() {
+function buildQueryString(
+  query: string,
+  categoryId: number | null,
+  lang: SearchLang,
+): string {
+  const params = new URLSearchParams();
+  if (query) params.set('q', query);
+  if (categoryId !== null) params.set('category', String(categoryId));
+  if (lang) params.set('lang', lang);
+  return params.toString();
+}
+
+function buildApiFilters(
+  categoryId: number | null,
+  lang: SearchLang,
+): ApiSearchFilters {
+  const filters: ApiSearchFilters = {};
+  if (categoryId !== null) filters.categoryId = categoryId;
+  if (lang) filters.lang = lang;
+  return filters;
+}
+
+function SearchPageContent() {
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<Status>('idle');
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const searchParams = useSearchParams();
+
+  const [inputValue, setInputValue] = useState(() => searchParams.get('q') ?? '');
+  const [committedQuery, setCommittedQuery] = useState(inputValue);
+  const [categoryId, setCategoryId] = useState<number | null>(() => {
+    const v = searchParams.get('category');
+    return v ? Number(v) : null;
+  });
+  const [lang, setLang] = useState<SearchLang>(() => {
+    const v = searchParams.get('lang');
+    return v === 'ko' || v === 'en' ? v : null;
+  });
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [selectedPosition, setSelectedPosition] = useState(0);
+
   const { recent, add: addRecent, remove: removeRecent, clear: clearRecent } =
     useRecentSearches();
-
-  const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const queryRef = useRef(query);
-  queryRef.current = query;
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const runSearch = useCallback(
-    async (q: string) => {
-      if (!q.trim()) {
-        setStatus('idle');
-        setArticles([]);
-        setNextCursor(null);
-        return;
-      }
+  // 입력 → committedQuery 디바운스
+  useEffect(() => {
+    const t = setTimeout(() => setCommittedQuery(inputValue.trim()), DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [inputValue]);
 
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
+  const filters = useMemo(() => buildApiFilters(categoryId, lang), [categoryId, lang]);
 
-      setStatus('loading');
-      try {
-        const { articles: results, next } = await searchArticles(
-          q,
-          controller.signal,
-        );
-        if (controller.signal.aborted) return;
-        setArticles(results);
-        setNextCursor(next);
-        setStatus(results.length === 0 ? 'empty' : 'results');
-        addRecent(q);
-      } catch {
-        if (controller.signal.aborted) return;
-        setStatus('error');
-      }
-    },
-    [addRecent],
+  const {
+    data,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    isError,
+  } = useSearchArticles({
+    query: committedQuery,
+    filters,
+    enabled: committedQuery.length > 0,
+  });
+
+  const articles = useMemo(
+    () => data?.pages.flatMap((p) => p.articles) ?? [],
+    [data],
   );
 
-  const loadMore = useCallback(async () => {
-    if (!nextCursor || loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const controller = new AbortController();
-      const { articles: more, next } = await searchArticles(
-        queryRef.current,
-        controller.signal,
-        nextCursor,
-      );
-      setArticles((prev) => [...prev, ...more]);
-      setNextCursor(next);
-    } catch {
-      // silently ignore — user can scroll again to retry
-    } finally {
-      setLoadingMore(false);
+  const queryId = data?.pages[0]?.queryId ?? null;
+  const rankingFilters = useMemo(() => ({ categoryId, lang }), [categoryId, lang]);
+  const ranking = useMemo(
+    () => ({ queryId, mode: 'hybrid' as const, filters: rankingFilters }),
+    [queryId, rankingFilters],
+  );
+
+  const status = useMemo<
+    'idle' | 'loading' | 'results' | 'empty' | 'error'
+  >(() => {
+    if (!committedQuery) return 'idle';
+    if (isError) return 'error';
+    if (isFetching && articles.length === 0) return 'loading';
+    if (!isFetching && articles.length === 0) return 'empty';
+    return 'results';
+  }, [committedQuery, isError, isFetching, articles.length]);
+
+  // URL 동기화
+  useEffect(() => {
+    const qs = buildQueryString(committedQuery, categoryId, lang);
+    const url = qs ? `/search?${qs}` : '/search';
+    router.replace(url, { scroll: false });
+  }, [committedQuery, categoryId, lang, router]);
+
+  // 검색 결과 도달 시 최근 검색어 기록
+  useEffect(() => {
+    if (status === 'results' && committedQuery) {
+      addRecent(committedQuery);
     }
-  }, [nextCursor, loadingMore]);
+  }, [status, committedQuery, addRecent]);
 
-  useEffect(() => {
-    if (!query.trim()) return;
-    const t = setTimeout(() => runSearch(query), DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [query, runSearch]);
+  // 자동완성: input 포커스 + 입력 중에 표시
+  const suggestPrefix = inputValue.trim();
+  const suggestionsEnabled = suggestionsOpen && suggestPrefix.length >= 0;
+  const { data: suggestionsData } = useSuggestions(suggestPrefix, suggestionsEnabled);
+  const suggestions = suggestionsData ?? [];
 
+  // 외부 클릭 시 자동완성 닫기
   useEffect(() => {
-    return () => {
-      abortRef.current?.abort();
-    };
+    function onDocClick(e: MouseEvent) {
+      if (!containerRef.current) return;
+      if (!containerRef.current.contains(e.target as Node)) {
+        setSuggestionsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  const handleChipClick = (q: string) => {
-    setQuery(q);
-    runSearch(q);
-  };
+  const commitQuery = useCallback((q: string) => {
+    setInputValue(q);
+    setCommittedQuery(q.trim());
+    setSuggestionsOpen(false);
+  }, []);
 
   const handleClear = () => {
-    setQuery('');
-    setStatus('idle');
-    setArticles([]);
-    setNextCursor(null);
+    setInputValue('');
+    setCommittedQuery('');
+    setSuggestionsOpen(false);
     inputRef.current?.focus();
   };
 
   return (
     <main className="min-h-svh bg-[var(--color-bg)]">
-      {/* Header */}
       <header className="sticky top-0 z-10 flex h-[var(--header-height)] items-center gap-2 bg-[var(--color-bg)] px-3">
         <button
           type="button"
@@ -129,39 +170,53 @@ export default function SearchPage() {
         >
           <ArrowLeftIcon size={20} />
         </button>
-        <div className="flex flex-1 items-center gap-2 rounded-full bg-[var(--color-gray4)] px-4 py-2">
-          <input
-            ref={inputRef}
-            type="search"
-            value={query}
-            onChange={(e) => {
-              const next = e.target.value;
-              setQuery(next);
-              if (!next.trim()) {
-                abortRef.current?.abort();
-                setStatus('idle');
-                setArticles([]);
-                setNextCursor(null);
-              }
-            }}
-            placeholder="검색어를 입력해주세요"
-            className="flex-1 bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-gray3)]"
-            enterKeyHint="search"
-          />
-          {query.length > 0 && (
-            <button
-              type="button"
-              onClick={handleClear}
-              aria-label="검색어 지우기"
-              className="flex h-5 w-5 items-center justify-center"
-            >
-              <Icon name="close" size={16} />
-            </button>
+        <div ref={containerRef} className="relative flex-1">
+          <div className="flex items-center gap-2 rounded-full bg-[var(--color-gray4)] px-4 py-2">
+            <input
+              ref={inputRef}
+              type="search"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onFocus={() => setSuggestionsOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  commitQuery(inputValue);
+                } else if (e.key === 'Escape') {
+                  setSuggestionsOpen(false);
+                }
+              }}
+              placeholder="키워드 또는 자연스러운 문장으로 검색해보세요"
+              className="flex-1 bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-gray3)]"
+              enterKeyHint="search"
+              autoComplete="off"
+            />
+            {inputValue.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClear}
+                aria-label="검색어 지우기"
+                className="flex h-5 w-5 items-center justify-center"
+              >
+                <Icon name="close" size={16} />
+              </button>
+            )}
+          </div>
+          {suggestionsOpen && (
+            <SearchSuggestions
+              suggestions={suggestions}
+              onSelect={commitQuery}
+            />
           )}
         </div>
       </header>
 
-      {/* Body */}
+      <SearchFilters
+        categoryId={categoryId}
+        lang={lang}
+        onCategoryChange={setCategoryId}
+        onLangChange={setLang}
+      />
+
       {status === 'idle' && (
         <section className="px-4 py-4">
           {recent.length === 0 ? (
@@ -188,7 +243,7 @@ export default function SearchPage() {
                     <div className="flex items-center gap-1 rounded-full bg-[var(--color-gray4)] py-1 pl-3 pr-1 text-sm text-[var(--color-text)]">
                       <button
                         type="button"
-                        onClick={() => handleChipClick(q)}
+                        onClick={() => commitQuery(q)}
                         className="max-w-[160px] truncate"
                       >
                         {q}
@@ -231,23 +286,33 @@ export default function SearchPage() {
       {status === 'results' && (
         <SearchResultList
           articles={articles}
-          query={query}
-          hasMore={nextCursor !== null}
-          loading={loadingMore}
-          onLoadMore={loadMore}
+          query={committedQuery}
+          hasMore={!!hasNextPage}
+          loading={isFetchingNextPage}
+          onLoadMore={() => fetchNextPage()}
           onSelectArticle={(article, position) => {
             setSelectedArticle(article);
             setSelectedPosition(position);
           }}
+          ranking={ranking}
         />
       )}
 
       <ArticlePreviewSheet
         article={selectedArticle}
-        query={query}
+        query={committedQuery}
         position={selectedPosition}
+        ranking={ranking}
         onClose={() => setSelectedArticle(null)}
       />
     </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-svh bg-[var(--color-bg)]" />}>
+      <SearchPageContent />
+    </Suspense>
   );
 }

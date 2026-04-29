@@ -85,19 +85,60 @@ export const getLikedArticles = async (
   return data;
 };
 
+export type SearchFilters = {
+  categoryId?: number;
+  lang?: 'ko' | 'en';
+  blogId?: number;
+  mode?: 'hybrid' | 'hybrid_rerank' | 'dense' | 'fulltext';
+};
+
+export type SearchPage = {
+  articles: Article[];
+  next: string | null;
+  queryId: string | null;
+};
+
 export const searchArticles = async (
   query: string,
   signal?: AbortSignal,
   from?: string,
-) => {
-  let url = `/v1/articles/search?query=${encodeURIComponent(query)}&limit=${ROWS_PER_PAGE}`;
-  if (from) {
-    url += `&from=${from}`;
-  }
-  const { data } = await api.get<{ articles: Article[]; next?: string }>(
+  filters?: SearchFilters,
+): Promise<SearchPage> => {
+  const params = new URLSearchParams();
+  params.set('query', query);
+  params.set('limit', String(ROWS_PER_PAGE));
+  if (from) params.set('from', from);
+  if (filters?.categoryId !== undefined) params.set('category_id', String(filters.categoryId));
+  if (filters?.lang) params.set('lang', filters.lang);
+  if (filters?.blogId !== undefined) params.set('blog_id', String(filters.blogId));
+  if (filters?.mode) params.set('mode', filters.mode);
+
+  const url = `/v1/articles/search?${params.toString()}`;
+  const { data } = await api.get<{ articles: Article[]; next?: string; query_id?: string }>(
     url,
     { signal },
     false,
   );
-  return { articles: data?.articles ?? [], next: data?.next ?? null };
+  return {
+    articles: data?.articles ?? [],
+    next: data?.next ?? null,
+    queryId: data?.query_id ?? null,
+  };
+};
+
+export const suggestQueries = async (
+  prefix: string,
+  signal?: AbortSignal,
+  limit: number = 8,
+): Promise<string[]> => {
+  const params = new URLSearchParams();
+  if (prefix) params.set('q', prefix);
+  params.set('limit', String(limit));
+  const url = `/v1/articles/suggest?${params.toString()}`;
+  const { data } = await api.get<{ suggestions: string[] }>(
+    url,
+    { signal },
+    false,
+  );
+  return data?.suggestions ?? [];
 };
