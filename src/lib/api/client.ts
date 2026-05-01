@@ -1,8 +1,16 @@
 import { ApiErrorResult, ApiResponse } from '@/types/api';
-import { getAccessToken, refreshAccessToken } from './auth';
+import {
+  getAccessToken,
+  mergeAnonymousEvents,
+  refreshAccessToken,
+  setAccessToken,
+} from './auth';
 import { getApiBaseUrl } from './baseUrl';
+import { getDeviceId } from '@/lib/device';
 
 const DEFAULT_TIMEOUT = 30000;
+const HEADER_DEVICE_ID = 'X-Device-Id';
+const HEADER_GUEST_TOKEN = 'X-Guest-Token';
 
 const getApiErrorMessage = (result: ApiErrorResult | unknown) => {
   if (
@@ -71,8 +79,11 @@ export class ApiClient {
         accessToken = getAccessToken();
       }
 
+      const deviceId = getDeviceId();
+
       const headers: Record<string, string> = {
         ...this.defaultHeaders,
+        ...(deviceId ? { [HEADER_DEVICE_ID]: deviceId } : {}),
         ...(authRequired && accessToken
           ? { Authorization: `Bearer ${accessToken}` }
           : {}),
@@ -84,6 +95,18 @@ export class ApiClient {
         headers,
         credentials: 'include',
       });
+
+      const guestToken = response.headers.get(HEADER_GUEST_TOKEN);
+      if (guestToken) {
+        // Only fire merge on first receipt. Rapid FK-action bursts return
+        // X-Guest-Token on every response until the client captures it; without
+        // this guard, mergeAnonymousEvents would POST N times per burst.
+        const alreadyHadToken = accessToken !== null;
+        setAccessToken(guestToken);
+        if (!alreadyHadToken) {
+          mergeAnonymousEvents();
+        }
+      }
 
       // 만약 토큰이 만료되었을 경우 (401 Unauthorized), 리프레시 토큰으로 새로운 액세스 토큰을 발급받고 다시 요청
       if (authRequired && response.status === 401 && !hasRetried) {
