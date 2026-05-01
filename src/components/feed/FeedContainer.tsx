@@ -4,7 +4,6 @@ import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from
 import { AnimatePresence } from 'framer-motion';
 import { Article } from '@/types/Article';
 import { FeedCard } from './FeedCard';
-import { CardHeader } from './CardHeader';
 import { CardSkeleton } from './CardSkeleton';
 import { sendEvent, EVENT_TYPE, TARGET_TYPE } from '@/lib/api/event';
 import { useFeedScroll } from '@/hooks/useFeedScroll';
@@ -812,15 +811,11 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
           </div>
         )}
       </div>
-      {currentIndex > 0 && articles[currentIndex - 1] && (
-        <div className="feed-peek-hint feed-peek-hint-top" ref={topPeekRef}>
-          <CardHeader blog={articles[currentIndex - 1].blog} />
-        </div>
+      {currentIndex > 0 && (
+        <div className="feed-peek-hint feed-peek-hint-top" ref={topPeekRef} />
       )}
-      {currentIndex < maxIndex && articles[currentIndex + 1] && (
-        <div className="feed-peek-hint feed-peek-hint-bottom" ref={bottomPeekRef}>
-          <CardHeader blog={articles[currentIndex + 1].blog} />
-        </div>
+      {currentIndex < maxIndex && (
+        <div className="feed-peek-hint feed-peek-hint-bottom" ref={bottomPeekRef} />
       )}
       <AnimatePresence>
         {showResumeButton && !isResuming && (
