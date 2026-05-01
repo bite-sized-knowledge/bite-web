@@ -4,21 +4,6 @@ import { api } from './client';
 const HEADER_INTEREST_IDS = 'X-Interest-Ids';
 
 /**
- * 사용자 언어 선호 결정.
- * - 우선: localStorage 의 명시 설정 (현재 미지원, 미래 onboarding 확장 hook).
- * - 차순위: navigator.language (예: ko-KR → ko, en-US → en).
- * - 알 수 없으면 undefined → recsys 가 모든 lang pass-through.
- */
-function detectLang(): string | undefined {
-  if (typeof navigator === 'undefined') return undefined;
-  const raw = navigator.language || navigator.languages?.[0];
-  if (!raw) return undefined;
-  const head = raw.split('-')[0]?.toLowerCase();
-  if (head === 'ko' || head === 'en') return head;
-  return undefined;
-}
-
-/**
  * localStorage 의 interestIds 를 X-Interest-Ids 헤더 (CSV) 로 변환.
  * 비회원 anonymous 의 device_category_bandit prior 강화에 사용 (recsys-serving).
  * 비어있거나 invalid 이면 헤더 미첨부 → recsys 는 균등 prior.
@@ -36,12 +21,15 @@ function interestHeader(): Record<string, string> {
   }
 }
 
+/**
+ * 추천 탭 호출. lang 자동 감지 안 함 — navigator.language 로 hard filter 면
+ * 한국 브라우저가 영어 좋은 글을 영영 못 보는 손실. 사용자가 명시 lang chip
+ * (예: latest 탭의 ko/en 필터) 을 설정한 경우에만 lang 적용 (별도 endpoint 사용).
+ *
+ * authRequired=false: 비회원도 같은 endpoint. X-Device-Id 는 client.ts 자동 첨부.
+ */
 export const getRecommendedFeed = async () => {
-  const lang = detectLang();
-  const qs = lang ? `?lang=${lang}` : '';
-  // authRequired=false: 비회원도 같은 endpoint. token 없으면 그냥 device_id 기반 anonymous 흐름.
-  // X-Device-Id 는 client.ts 가 자동 첨부. 401 retry 사이클 회피.
-  const data = await api.get<Article[]>(`/v1/feed${qs}`, { headers: interestHeader() }, false);
+  const data = await api.get<Article[]>('/v1/feed', { headers: interestHeader() }, false);
   return data;
 };
 
