@@ -24,3 +24,21 @@ export function getSessionId(): string {
   }
   return id;
 }
+
+const FEED_REQUEST_KEY = 'bite_feed_request_id';
+
+/**
+ * /v1/feed 호출 시 응답 헤더 X-Feed-Request-Id 를 sessionStorage 에 저장.
+ * 다음 user_events 가 이 값을 첨부 → recsys 의 impression ↔ click 정확 그룹핑.
+ * 새 /v1/feed 응답마다 덮어씀 (가장 최근 응답에서 발생한 클릭만 정확 매핑).
+ */
+export function setFeedRequestId(id: string | null): void {
+  if (typeof window === 'undefined') return;
+  if (id) sessionStorage.setItem(FEED_REQUEST_KEY, id);
+  else sessionStorage.removeItem(FEED_REQUEST_KEY);
+}
+
+export function getFeedRequestId(): string {
+  if (typeof window === 'undefined') return '';
+  return sessionStorage.getItem(FEED_REQUEST_KEY) ?? '';
+}
