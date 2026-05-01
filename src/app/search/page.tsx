@@ -183,7 +183,7 @@ function SearchPageContent() {
                 ref={inputRef}
                 type="search"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => setInputValue(e.target.value.slice(0, 200))}
                 onFocus={() => setSuggestionsOpen(true)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -196,6 +196,7 @@ function SearchPageContent() {
                 className="flex-1 bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-gray3)]"
                 enterKeyHint="search"
                 autoComplete="off"
+                maxLength={200}
               />
               {inputValue.length > 0 && (
                 <button

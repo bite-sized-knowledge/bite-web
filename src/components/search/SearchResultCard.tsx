@@ -9,6 +9,7 @@ import { HighlightMatch } from './HighlightMatch';
 import { Icon } from '@/components/ui/Icon';
 
 import { DEFAULT_THUMBNAIL } from '@/lib/constants';
+import { toHttpsUrl } from '@/lib/image';
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -69,9 +70,9 @@ export function SearchResultCard({ article, query, position, onSelect, ranking }
     return () => observer.disconnect();
   }, [article.id, position, query, ranking?.queryId, ranking?.mode, ranking?.filters]);
 
-  const thumbnail =
-    article.thumbnail || DEFAULT_THUMBNAIL;
+  const thumbnail = toHttpsUrl(article.thumbnail) || DEFAULT_THUMBNAIL;
   const [imgSrc, setImgSrc] = useState(thumbnail);
+  const faviconSrc = toHttpsUrl(article.blog?.favicon);
 
   const handleClick = () => {
     onSelect(article, position);
@@ -110,10 +111,10 @@ export function SearchResultCard({ article, query, position, onSelect, ranking }
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         {/* Blog info + date */}
         <div className="flex items-center gap-1.5">
-          {article.blog?.favicon && (
+          {faviconSrc && (
             <div className="h-4 w-4 shrink-0 overflow-hidden rounded-full bg-[var(--color-gray4)]">
               <Image
-                src={article.blog.favicon}
+                src={faviconSrc}
                 alt=""
                 width={16}
                 height={16}

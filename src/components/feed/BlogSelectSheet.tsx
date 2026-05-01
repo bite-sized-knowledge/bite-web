@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
 import type { BlogResponse } from '@/lib/api/blog';
 import { shortenBlogName } from '@/types/Blog';
+import { toHttpsUrl } from '@/lib/image';
 
 const DRAG_CLOSE_THRESHOLD = 80;
 
@@ -28,7 +29,7 @@ const BlogButton = memo(function BlogButton({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={blog.favicon}
+        src={toHttpsUrl(blog.favicon)}
         alt=""
         width={24}
         height={24}

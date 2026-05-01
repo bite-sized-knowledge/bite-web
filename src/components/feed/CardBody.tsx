@@ -5,14 +5,14 @@ import { Article } from '@/types/Article';
 import { useArticleReaderEvents } from '@/hooks/useArticleReaderEvents';
 
 import { DEFAULT_THUMBNAIL } from '@/lib/constants';
+import { toHttpsUrl } from '@/lib/image';
 
 interface CardBodyProps {
   article: Article;
 }
 
 export const CardBody: React.FC<CardBodyProps> = ({ article }) => {
-  const thumbnail =
-    article.thumbnail || DEFAULT_THUMBNAIL;
+  const thumbnail = toHttpsUrl(article.thumbnail) || DEFAULT_THUMBNAIL;
   const [imgSrc, setImgSrc] = useState(thumbnail);
   const { openArticle } = useArticleReaderEvents();
 

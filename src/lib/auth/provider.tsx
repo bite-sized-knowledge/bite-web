@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { getApiBaseUrl } from '@/lib/api/baseUrl';
 
@@ -24,11 +24,16 @@ interface AuthProviderProps {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [isLoggedIn, setLoggedIn] = useState(
-    () => typeof window !== 'undefined' && localStorage.getItem('accessToken') !== null,
-  );
+  // Initial render must match SSR (no localStorage access) so that hydrating
+  // children read the same value on both passes — otherwise we hit React
+  // hydration error #418 on every auth-aware page. Sync after mount.
+  const [isLoggedIn, setLoggedIn] = useState(false);
   const [token, setToken] = useState<UserInfo | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    setLoggedIn(localStorage.getItem('accessToken') !== null);
+  }, []);
 
   const logout = async () => {
     // Clear httpOnly refresh token cookie via server

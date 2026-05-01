@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Blog } from '@/types/Blog';
+import { toHttpsUrl } from '@/lib/image';
 
 interface CardHeaderProps {
   blog: Blog;
@@ -11,6 +12,7 @@ interface CardHeaderProps {
 }
 
 export const CardHeader: React.FC<CardHeaderProps> = ({ blog, trailing }) => {
+  const favicon = toHttpsUrl(blog.favicon);
   return (
     <div className="feed-card-header flex items-center gap-2">
       <Link
@@ -18,9 +20,9 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ blog, trailing }) => {
         className="flex flex-1 items-center gap-2 min-w-0"
       >
         <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full bg-[#d9d9d9]">
-          {blog.favicon && (
+          {favicon && (
             <Image
-              src={blog.favicon}
+              src={favicon}
               alt={blog.title}
               width={24}
               height={24}

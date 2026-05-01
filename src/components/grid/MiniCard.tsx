@@ -6,6 +6,7 @@ import { Article } from '@/types/Article';
 import { useArticleReaderEvents } from '@/hooks/useArticleReaderEvents';
 
 import { DEFAULT_THUMBNAIL } from '@/lib/constants';
+import { toHttpsUrl } from '@/lib/image';
 
 interface MiniCardProps {
   article: Article;
@@ -37,10 +38,9 @@ export default function MiniCard({
   onArticleClick,
 }: MiniCardProps) {
   const { openArticle } = useArticleReaderEvents();
-  const thumbnail =
-    article.thumbnail || DEFAULT_THUMBNAIL;
+  const thumbnail = toHttpsUrl(article.thumbnail) || DEFAULT_THUMBNAIL;
   const [imgSrc, setImgSrc] = useState(thumbnail);
-  const [faviconSrc, setFaviconSrc] = useState(article.blog?.favicon || DEFAULT_THUMBNAIL);
+  const [faviconSrc, setFaviconSrc] = useState(toHttpsUrl(article.blog?.favicon) || DEFAULT_THUMBNAIL);
 
   if (isPlaceholder) {
     return <div className="min-w-[160px] min-h-[160px]" />;
