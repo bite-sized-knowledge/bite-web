@@ -193,7 +193,7 @@ function SearchPageContent() {
                   }
                 }}
                 placeholder="키워드 또는 자연스러운 문장으로 검색해보세요"
-                className="flex-1 bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-gray3)]"
+                className="flex-1 bg-transparent text-base text-[var(--color-text)] outline-none placeholder:text-[var(--color-gray3)]"
                 enterKeyHint="search"
                 autoComplete="off"
                 maxLength={200}

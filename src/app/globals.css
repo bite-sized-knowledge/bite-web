@@ -646,3 +646,14 @@ body {
     transparent 100%
   );
 }
+
+/* WebKit/Blink renders a native × inside type="search" inputs that overlaps
+   our custom clear button. Suppress it everywhere — we render our own. */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
