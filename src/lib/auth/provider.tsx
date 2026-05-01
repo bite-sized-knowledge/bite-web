@@ -32,6 +32,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const router = useRouter();
 
   useEffect(() => {
+    // SSR 과 동일한 false 로 hydrate 후 mount 시점에 동기화 — #418 회피의 의도된 패턴.
+    // React 19 lint 가 effect 안 setState 를 일반 차단하지만 hydration parity 케이스의 합법적 예외.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoggedIn(localStorage.getItem('accessToken') !== null);
   }, []);
 
