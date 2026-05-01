@@ -1,6 +1,6 @@
 import { getAccessToken } from './auth';
 import { getApiBaseUrl } from './baseUrl';
-import { getDeviceId, getSessionId } from '@/lib/device';
+import { getDeviceId, getFeedRequestId, getSessionId } from '@/lib/device';
 
 export const TARGET_TYPE = {
   BLOG: 'BLOG',
@@ -78,6 +78,7 @@ export const sendEvent = (
   }
 
   const sessionId = getSessionId();
+  const feedRequestId = getFeedRequestId();
   const body: Record<string, unknown> = {
     targetType,
     targetId,
@@ -86,6 +87,9 @@ export const sendEvent = (
     device_id: deviceId,
     session_id: sessionId,
   };
+  if (feedRequestId) {
+    body.feed_request_id = feedRequestId;
+  }
   if (targetType === 'ARTICLE') body.article_id = targetId;
   if (extras.dwellTimeMs !== undefined) {
     body.dwell_time_ms = Math.max(0, Math.round(extras.dwellTimeMs));

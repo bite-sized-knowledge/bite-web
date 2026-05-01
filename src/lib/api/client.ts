@@ -6,11 +6,12 @@ import {
   setAccessToken,
 } from './auth';
 import { getApiBaseUrl } from './baseUrl';
-import { getDeviceId } from '@/lib/device';
+import { getDeviceId, setFeedRequestId } from '@/lib/device';
 
 const DEFAULT_TIMEOUT = 30000;
 const HEADER_DEVICE_ID = 'X-Device-Id';
 const HEADER_GUEST_TOKEN = 'X-Guest-Token';
+const HEADER_FEED_REQUEST_ID = 'X-Feed-Request-Id';
 
 const getApiErrorMessage = (result: ApiErrorResult | unknown) => {
   if (
@@ -95,6 +96,13 @@ export class ApiClient {
         headers,
         credentials: 'include',
       });
+
+      // /v1/feed 응답에서 recsys 의 feed_request_id 를 받아 sessionStorage 저장.
+      // 이후 user_events 가 이 값을 첨부 → impression ↔ click 정확 그룹핑.
+      const feedRequestId = response.headers.get(HEADER_FEED_REQUEST_ID);
+      if (feedRequestId) {
+        setFeedRequestId(feedRequestId);
+      }
 
       const guestToken = response.headers.get(HEADER_GUEST_TOKEN);
       if (guestToken) {
